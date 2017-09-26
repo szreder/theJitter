@@ -61,33 +61,7 @@ RValue resolveRValue(const RValue *src)
 	return RValue{};
 }
 
-template <typename T>
-RValue executeBinop(const RValue &opLeft, const RValue &opRight, BinOp::Type op)
-{
-	if constexpr(std::is_arithmetic<T>::value) {
-		switch (op) {
-			case BinOp::Type::Plus:
-				return RValue{opLeft.value<T>() + opRight.value<T>()};
-			case BinOp::Type::Minus:
-				return RValue{opLeft.value<T>() - opRight.value<T>()};
-			case BinOp::Type::Times:
-				return RValue{opLeft.value<T>() * opRight.value<T>()};
-			case BinOp::Type::Divide:
-				return RValue{opLeft.value<T>() / opRight.value<T>()};
-		}
-	}
-
-	if constexpr(std::is_integral<T>::value) {
-		if (op == BinOp::Type::Modulo)
-			return RValue{opLeft.value<T>() % opRight.value<T>()};
-	}
-
-	std::cerr << "Unable to execute binary operation: " << BinOp::toString(op) << " for type " << typeid(T).name() << '\n';
-	abort();
-	return RValue{};
-}
-
-void executeBinop(BinOp::Type op)
+void executeBinOp(BinOp::Type op)
 {
 	const RValue *left = popData<const RValue *>();
 	const RValue *right = popData<const RValue *>();
@@ -100,16 +74,16 @@ void executeBinop(BinOp::Type op)
 	RValue result;
 	switch (opLeft.valueType()) {
 		case ValueType::Boolean:
-			result = executeBinop<bool>(opLeft, opRight, op);
+			result = RValue::executeBinOp<bool>(opLeft, opRight, op);
 			break;
 		case ValueType::Integer:
-			result = executeBinop<int>(opLeft, opRight, op);
+			result = RValue::executeBinOp<int>(opLeft, opRight, op);
 			break;
 		case ValueType::Real:
-			result = executeBinop<double>(opLeft, opRight, op);
+			result = RValue::executeBinOp<double>(opLeft, opRight, op);
 			break;
 		case ValueType::String:
-			result = executeBinop<std::string>(opLeft, opRight, op);
+			result = RValue::executeBinOp<std::string>(opLeft, opRight, op);
 			break;
 	}
 
@@ -210,7 +184,7 @@ void runcall(int call, void *arg)
 			setVariable();
 			break;
 		case RUNCALL_BINOP:
-			executeBinop(fromVoidPtr<BinOp::Type>(arg));
+			executeBinOp(fromVoidPtr<BinOp::Type>(arg));
 			break;
 		default:
 			std::cout << "Runcall " << call << " not supported\n";

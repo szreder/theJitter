@@ -51,24 +51,7 @@ GenResult generateImmediateSpec<std::string>(const RValue &opLeft, const RValue 
 template <typename T>
 GenResult generateImmediateArithm(const RValue &opLeft, const RValue &opRight, BinOp::Type op)
 {
-	switch (op) {
-		case BinOp::Type::Plus:
-			return RValue{opLeft.value<T>() + opRight.value<T>()};
-		case BinOp::Type::Minus:
-			return RValue{opLeft.value<T>() - opRight.value<T>()};
-		case BinOp::Type::Times:
-			return RValue{opLeft.value<T>() * opRight.value<T>()};
-		case BinOp::Type::Divide:
-			return RValue{opLeft.value<T>() / opRight.value<T>()};
-	}
-
-	if constexpr(std::is_integral<T>::value) {
-		if (op == BinOp::Type::Modulo)
-			return RValue{opLeft.value<T>() % opRight.value<T>()};
-	}
-
-	assert(false);
-	return {};
+	return RValue::executeBinOp<T>(opLeft, opRight, op);
 }
 
 template <typename T>

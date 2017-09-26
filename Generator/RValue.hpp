@@ -3,6 +3,7 @@
 #include <libgccjit.h>
 #include <variant>
 
+#include "Generator/AST.hpp"
 #include "Generator/Program.hpp"
 #include "Generator/ValueType.hpp"
 #include "Generator/Variable.hpp"
@@ -39,6 +40,33 @@ public:
 
 		return RValue{};
 	}
+
+	template <typename T>
+	static RValue executeBinOp(const RValue &opLeft, const RValue &opRight, BinOp::Type op)
+	{
+		if constexpr(std::is_arithmetic<T>::value) {
+			switch (op) {
+				case BinOp::Type::Plus:
+					return RValue{opLeft.value<T>() + opRight.value<T>()};
+				case BinOp::Type::Minus:
+					return RValue{opLeft.value<T>() - opRight.value<T>()};
+				case BinOp::Type::Times:
+					return RValue{opLeft.value<T>() * opRight.value<T>()};
+				case BinOp::Type::Divide:
+					return RValue{opLeft.value<T>() / opRight.value<T>()};
+			}
+		}
+
+		if constexpr(std::is_integral<T>::value) {
+			if (op == BinOp::Type::Modulo)
+				return RValue{opLeft.value<T>() % opRight.value<T>()};
+		}
+
+		std::cerr << "Unable to execute binary operation: " << BinOp::toString(op) << " for type " << typeid(T).name() << '\n';
+		abort();
+		return RValue{};
+	}
+
 
 	RValue() : m_type{Type::Immediate}, m_valueType{ValueType::Invalid} {}
 	RValue(bool v) : m_type{Type::Immediate}, m_valueType{ValueType::Boolean}, m_value{v} {}
