@@ -121,7 +121,7 @@ var {
 	$$ = new VarNode{$1};
 	free($1);
 }
-| "(" expr ")" {
+| '(' expr ')' {
 	$$ = $2;
 
 }
