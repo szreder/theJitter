@@ -250,6 +250,12 @@ class FunctionCall : public Node {
 public:
 	FunctionCall(Node *funcExpr) : m_functionExpr{funcExpr} {}
 
+	~FunctionCall()
+	{
+		delete m_functionExpr;
+		delete m_args;
+	}
+
 	void print(int indent) const override
 	{
 		do_indent(indent);
@@ -259,9 +265,12 @@ public:
 		std::cout << "Args:\n";
 	}
 
-	void setArgs(ExprList *args) { m_args = args; }
+	Node * functionExpr() const { return m_functionExpr; }
 
 	const ExprList * args() const { return m_args; }
+	void setArgs(ExprList *args) { m_args = args; }
+
+
 	Node::Type type() const override { return Type::FunctionCall; }
 private:
 	Node *m_functionExpr;

@@ -7,6 +7,7 @@
 #include "Generator/RValue.hpp"
 #include "Generator/Runtime.hpp"
 #include "Generator/Scope.hpp"
+#include "Util/Casts.hpp"
 
 namespace {
 
@@ -95,8 +96,9 @@ void unsetVariable()
 {
 	const std::string *varName = popData<const std::string *>();
 	auto var = findVariable(varName);
-	         //TODO
-	if (var)
+
+	if (!var)
+		return;
 
 	for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
 		if (scope->removeVar(varName))
@@ -174,12 +176,7 @@ void runcall(int call, void *arg)
 			std::cout << "Scope pop\n";
 			scopeStack.pop_back();
 			break;
-		case RUNCALL_PUSH_RVALUE:
-			std::cout << "Push " << *static_cast<const RValue *>(arg) << '\n';
-			dataStack.push_back(arg);
-			break;
-		case RUNCALL_VARIABLE_NAME:
-			std::cout << "Push variable name: " << *static_cast<const std::string *>(arg) << '\n';
+		case RUNCALL_PUSH:
 			dataStack.push_back(arg);
 			break;
 		case RUNCALL_VARIABLE_UNSET:

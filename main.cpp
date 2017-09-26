@@ -1,5 +1,3 @@
-#include <functional>
-
 #include "Generator/AST.hpp"
 #include "grammar.tab.h"
 
@@ -8,12 +6,7 @@ extern Node *root;
 #include "Generator/Generator.hpp"
 #include "Generator/Program.hpp"
 #include "Generator/Runtime.hpp"
-
-template <typename T>
-std::function<T> function_cast(void *p)
-{
-	return reinterpret_cast<T *>(p);
-}
+#include "Util/Casts.hpp"
 
 int main()
 {

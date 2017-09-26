@@ -7,6 +7,7 @@
 #include "Generator/Program.hpp"
 #include "Generator/Runtime.hpp"
 #include "Generator/RValue.hpp"
+#include "Util/Casts.hpp"
 #include "Util/PrettyPrint.hpp"
 
 namespace {
@@ -23,7 +24,7 @@ void runcall(Program &program, gcc_jit_function *func, gcc_jit_block *block, int
 	gcc_jit_block_add_eval(block, nullptr, jitCall);
 }
 
-typedef std::variant <std::monostate, RValue> GenResult;
+typedef std::optional <RValue> GenResult;
 
 GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src);
 
@@ -45,7 +46,7 @@ GenResult generateImmediateSpec<std::string>(const RValue &opLeft, const RValue 
 	if (op == BinOp::Type::Plus)
 		return RValue{opLeft.value<std::string>() + opRight.value<std::string>()};
 
-	assert(false);
+	abort();
 	return {};
 }
 
@@ -92,26 +93,35 @@ GenResult generate(Program &program, gcc_jit_function *func, gcc_jit_block *bloc
 
 GenResult generate(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src);
 
+std::vector <GenResult> generateExprList(Program &program, gcc_jit_function *func, gcc_jit_block *block, const ExprList *exprList)
+{
+	std::vector <GenResult> exprResults(exprList->exprs().size());
+	size_t i = 0;
+
+	for (const Node *expr : exprList->exprs()) {
+		exprResults[i] = dispatch(program,func, block, expr);
+		if (!exprResults[i])
+			exprResults[i] = RValue::Nil();
+		++i;
+	}
+	return exprResults;
+}
+
 template <>
 GenResult generate<Node::Type::Assignment>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
 	const Assignment *c = static_cast<const Assignment *>(src);
 	const ExprList *exprList = c->exprList();
-	std::vector <GenResult> exprResults(exprList->exprs().size());
+	std::vector <GenResult> exprResults = generateExprList(program, func, block, exprList);
+
 	size_t i = 0;
-
-	for (const Node *expr : exprList->exprs()) {
-		exprResults[i++] = dispatch(program, func, block, expr);
-	}
-
-	i = 0;
 	const VarList *varList = c->varList();
 	for (const std::string &var : varList->vars()) {
-		runcall(program, func, block, RUNCALL_VARIABLE_NAME, program.duplicateString(var));
-		if (i >= exprResults.size() || !std::holds_alternative<RValue>(exprResults[i])) {
+		runcall(program, func, block, RUNCALL_PUSH, program.duplicateString(var));
+		if (i >= exprResults.size() || !exprResults[i]) {
 			runcall(program, func, block, RUNCALL_VARIABLE_UNSET, nullptr);
 		} else {
-			runcall(program, func, block, RUNCALL_PUSH_RVALUE, program.allocRValue(std::get<RValue>(exprResults[i])));
+			runcall(program, func, block, RUNCALL_PUSH, program.allocRValue(exprResults[i].value()));
 			runcall(program, func, block, RUNCALL_VARIABLE_SET, nullptr);
 		}
 		++i;
@@ -129,11 +139,11 @@ GenResult generate<Node::Type::BinOp>(Program &program, gcc_jit_function *func, 
 	const BinOp *bo = static_cast<const BinOp *>(src);
 
 	GenResult left = dispatch(program, func, block, bo->left());
-	RValue &leftRValue = std::get<RValue>(left);
+	RValue &leftRValue = left.value();
 	checkType(leftRValue, bo->left());
 
 	GenResult right = dispatch(program, func, block, bo->right());
-	RValue &rightRValue = std::get<RValue>(right);
+	RValue &rightRValue = right.value();
 	checkType(rightRValue, bo->right());
 
 	if (leftRValue.type() == RValue::Type::Immediate && rightRValue.type() == RValue::Type::Immediate)
@@ -142,9 +152,9 @@ GenResult generate<Node::Type::BinOp>(Program &program, gcc_jit_function *func, 
 	sprintf(buff, "__binop_v_%d", ++binopVarCnt);
 	gcc_jit_lvalue *binopTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
 
-	runcall(program, func, block, RUNCALL_VARIABLE_NAME, program.duplicateString(buff));
-	runcall(program, func, block, RUNCALL_PUSH_RVALUE, program.allocRValue(rightRValue));
-	runcall(program, func, block, RUNCALL_PUSH_RVALUE, program.allocRValue(leftRValue));
+	runcall(program, func, block, RUNCALL_PUSH, program.duplicateString(buff));
+	runcall(program, func, block, RUNCALL_PUSH, program.allocRValue(rightRValue));
+	runcall(program, func, block, RUNCALL_PUSH, program.allocRValue(leftRValue));
 	runcall(program, func, block, RUNCALL_BINOP, toVoidPtr(bo->binOpType()));
 
 	return RValue::asVariable(std::string{buff});
@@ -167,12 +177,18 @@ GenResult generate<Node::Type::Chunk>(Program &program, gcc_jit_function *func, 
 template <>
 GenResult generate<Node::Type::FunctionCall>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
-	return {};
-	/*
+	static int funcArgCnt = 0;
+	char buff[30];
+
 	const FunctionCall *f = static_cast<const FunctionCall *>(src);
-	runcall(program, func, block, RUNCALL_PUSH_INT, ...);
-	runcall(program, func, block, RUNCALL_FUNCTION_NAME, ...);
-	*/
+	const ExprList *args = f->args();
+	std::vector <GenResult> exprResults = generateExprList(program, func, block, args);
+
+	for (auto i = exprResults.crbegin(); i != exprResults.crend(); ++i)
+		runcall(program, func, block, RUNCALL_PUSH, program.allocRValue(i->value()));
+	runcall(program, func, block, RUNCALL_PUSH, toVoidPtr(args->exprs().size()));
+	runcall(program, func, block, RUNCALL_PUSH, program.allocRValue(f->functionExpr()));
+	runcall(program, func, block, RUNCALL_FUNCTION_CALL, nullptr);
 }
 
 template <>
