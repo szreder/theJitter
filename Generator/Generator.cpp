@@ -213,7 +213,7 @@ GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *bloc
 	return {};
 }
 
-}
+} //namespace
 
 void generate(const Node *root)
 {

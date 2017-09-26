@@ -158,7 +158,7 @@ void __setVariable(const char *varName, const RValue *value)
 	}
 }
 
-}
+} //namespace
 
 void runcall(int call, void *arg)
 {
