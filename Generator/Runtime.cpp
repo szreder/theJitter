@@ -13,7 +13,7 @@ namespace {
 std::vector <Scope> scopeStack;
 std::vector <void *> dataStack;
 
-void __setVariable(const char *varName, const RValue *value);
+void __setVariable(const std::string *varName, const RValue *value);
 
 template <typename T>
 T popData()
@@ -24,7 +24,7 @@ T popData()
 	return result;
 }
 
-const Variable * findVariable(const char *varName)
+const Variable * findVariable(const std::string *varName)
 {
 	for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
 		auto result = scope->getVar(varName);
@@ -36,7 +36,7 @@ const Variable * findVariable(const char *varName)
 
 const Variable * findVariable(const std::string &varName)
 {
-	return findVariable(varName.data());
+	return findVariable(&varName);
 }
 
 RValue resolveRValue(const RValue *src)
@@ -63,9 +63,10 @@ RValue resolveRValue(const RValue *src)
 
 void executeBinOp(BinOp::Type op)
 {
+	std::cout << "Execute BinOp " << BinOp::toString(op) << '\n';
 	const RValue *left = popData<const RValue *>();
 	const RValue *right = popData<const RValue *>();
-	const char *varName = popData<const char *>();
+	const std::string *varName = popData<const std::string *>();
 
 	RValue opLeft = resolveRValue(left);
 	RValue opRight = resolveRValue(right);
@@ -92,8 +93,9 @@ void executeBinOp(BinOp::Type op)
 
 void unsetVariable()
 {
-	const char *varName = popData<const char *>();
+	const std::string *varName = popData<const std::string *>();
 	auto var = findVariable(varName);
+	         //TODO
 	if (var)
 
 	for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
@@ -105,15 +107,15 @@ void unsetVariable()
 void setVariable()
 {
 	const RValue *value = popData<const RValue *>();
-	const char *varName = popData<const char *>();
+	const std::string *varName = popData<const std::string *>();
 	__setVariable(varName, value);
 }
 
-void __setVariable(const char *varName, const RValue *value)
+void __setVariable(const std::string *varName, const RValue *value)
 {
-	std::cout << "setVariable " << varName << '\n';
+	std::cout << "setVariable " << *varName << '\n';
 
-	auto doSetVar = [](const char *name, auto val, std::vector <Scope> &scopeStack) {
+	auto doSetVar = [](const std::string *name, auto val, std::vector <Scope> &scopeStack) {
 		for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
 			auto var = scope->getVar(name);
 			if (var) {
@@ -133,13 +135,13 @@ void __setVariable(const char *varName, const RValue *value)
 
 		case RValue::Type::Variable: {
 			const Variable *otherVar = nullptr;
-			const char *searchedName = value->value<std::string>().data();
+			const std::string &searchedName = value->value<std::string>();
 
-			std::cerr << "setVariable(varName = " << varName << ") from varName = " << searchedName << '\n';
+			std::cerr << "setVariable(varName = " << *varName << ") from varName = " << searchedName << '\n';
 
 			auto scope = scopeStack.rbegin();
 			while (scope != scopeStack.rend() && otherVar == nullptr) {
-				otherVar = scope->getVar(searchedName);
+				otherVar = scope->getVar(&searchedName);
 				++scope;
 			}
 
@@ -153,7 +155,7 @@ void __setVariable(const char *varName, const RValue *value)
 		}
 
 		default:
-			std::cerr << "setVariable(varName = " << varName << "), unknown RValue type = " << toUnderlying(value->type()) << '\n';
+			std::cerr << "setVariable(varName = " << *varName << "), unknown RValue type = " << toUnderlying(value->type()) << '\n';
 			abort();
 	}
 }
@@ -162,25 +164,30 @@ void __setVariable(const char *varName, const RValue *value)
 
 void runcall(int call, void *arg)
 {
-	std::cout << "Runcall " << call << " with arg = " << arg << '\n';
+	std::cout << "==== Runcall " << call << " with arg = " << arg << '\n';
 	switch (call) {
 		case RUNCALL_SCOPE_PUSH:
+			std::cout << "Scope push\n";
 			scopeStack.push_back(Scope{});
 			break;
 		case RUNCALL_SCOPE_POP:
+			std::cout << "Scope pop\n";
 			scopeStack.pop_back();
 			break;
 		case RUNCALL_PUSH_RVALUE:
+			std::cout << "Push " << *static_cast<const RValue *>(arg) << '\n';
 			dataStack.push_back(arg);
 			break;
 		case RUNCALL_VARIABLE_NAME:
-			std::cout << "Push variable name: " << static_cast<const char *>(arg) << '\n';
+			std::cout << "Push variable name: " << *static_cast<const std::string *>(arg) << '\n';
 			dataStack.push_back(arg);
 			break;
 		case RUNCALL_VARIABLE_UNSET:
+			std::cout << "Unset variable\n";
 			unsetVariable();
 			break;
 		case RUNCALL_VARIABLE_SET:
+			std::cout << "Set variable\n";
 			setVariable();
 			break;
 		case RUNCALL_BINOP:

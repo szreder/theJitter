@@ -2,7 +2,7 @@
 #include <string>
 
 #include "Generator/AST.hpp"
-#include "Generator/ValueType.hpp"
+#include "Generator/RValue.hpp"
 #include "Util/EnumHelpers.hpp"
 
 const std::string & prettyPrint(Node::Type t)
@@ -21,6 +21,22 @@ const std::string & prettyPrint(Node::Type t)
 		result[toUnderlying(Node::Type::Field)] = "field";
 		result[toUnderlying(Node::Type::BinOp)] = "binary_op";
 		result[toUnderlying(Node::Type::UnOp)] = "unary_op";
+
+		return result;
+	}();
+
+	return Strings[toUnderlying(t)];
+}
+
+const std::string & prettyPrint(RValue::Type t)
+{
+	typedef std::array <std::string, toUnderlying(RValue::Type::_last)> StringArray;
+	static const StringArray Strings = []{
+		StringArray result;
+
+		result[toUnderlying(RValue::Type::FunctionCall)] = "function_call";
+		result[toUnderlying(RValue::Type::Immediate)] = "immediate";
+		result[toUnderlying(RValue::Type::Variable)] = "variable";
 
 		return result;
 	}();

@@ -9,20 +9,20 @@
 
 class Scope {
 public:
-	const Variable * getVar(const char *varName)
+	const Variable * getVar(const std::string *varName)
 	{
 		Variable tmp;
-		tmp.name = varName;
+		tmp.name = varName->data();
 		auto var = m_vars.find(tmp);
 		if (var != m_vars.end())
 			return &(*var);
 		return nullptr;
 	}
 
-	void setVar(const char *varName, const RValue *value)
+	void setVar(const std::string *varName, const RValue *value)
 	{
 		Variable tmp;
-		tmp.name = varName;
+		tmp.name = varName->data();
 		tmp.type = value->valueType();
 		switch (tmp.type) {
 			case ValueType::Boolean:
@@ -43,11 +43,11 @@ public:
 		m_vars.insert(tmp);
 	}
 
-	void setVar(const char *varName, const Variable *value)
+	void setVar(const std::string *varName, const Variable *value)
 	{
-		std::cerr << "Scope, set variable = " << varName << " to: " << *value << '\n';
+		std::cerr << "Scope, set variable = " << *varName << " to: " << *value << '\n';
 		Variable tmp;
-		tmp.name = varName;
+		tmp.name = varName->data();
 		tmp.type = value->type;
 		switch (tmp.type) {
 			case ValueType::Boolean:
@@ -68,10 +68,10 @@ public:
 		m_vars.insert(tmp);
 	}
 
-	bool removeVar(const char *varName)
+	bool removeVar(const std::string *varName)
 	{
 		Variable tmp;
-		tmp.name = varName;
+		tmp.name = varName->data();
 		return m_vars.erase(tmp) != 0;
 	}
 

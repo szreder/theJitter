@@ -25,6 +25,8 @@ public:
 	gcc_jit_type * type(ValueType t) const;
 
 	RValue * allocRValue(const RValue &src = RValue{});
+	std::string * duplicateString(const char *s);
+	std::string * duplicateString(const std::string &s);
 private:
 	void prepareTypes();
 	void releaseMemory();
@@ -37,4 +39,5 @@ private:
 	gcc_jit_function *m_mainFunc;
 
 	std::vector <std::unique_ptr <RValue> > m_rvaluePool;
+	std::vector <std::unique_ptr <std::string> > m_stringPool;
 };

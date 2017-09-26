@@ -6,7 +6,6 @@
 #include <unordered_set>
 
 #include "Generator/ValueType.hpp"
-#include "Util/PrettyPrint.hpp"
 
 struct Variable {
 	ValueType type;

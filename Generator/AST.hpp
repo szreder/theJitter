@@ -261,6 +261,7 @@ public:
 
 	void setArgs(ExprList *args) { m_args = args; }
 
+	const ExprList * args() const { return m_args; }
 	Node::Type type() const override { return Type::FunctionCall; }
 private:
 	Node *m_functionExpr;

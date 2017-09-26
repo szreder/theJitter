@@ -33,6 +33,17 @@ RValue * Program::allocRValue(const RValue &src)
 	return m_rvaluePool.back().get();
 }
 
+std::string * Program::duplicateString(const char *s)
+{
+	m_stringPool.push_back(std::make_unique<std::string>(s));
+	return m_stringPool.back().get();
+}
+
+std::string * Program::duplicateString(const std::string &s)
+{
+	return duplicateString(s.data());
+}
+
 void Program::prepareTypes()
 {
 	auto ctx = m_jitCtx.get();

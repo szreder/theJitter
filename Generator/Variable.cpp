@@ -1,5 +1,5 @@
-#include "Generator/Program.hpp"
-#include "Generator/ValueType.hpp"
+#include "Generator/Variable.hpp"
+#include "Util/PrettyPrint.hpp"
 
 std::ostream & operator << (std::ostream &os, const Variable &v)
 {
@@ -17,6 +17,7 @@ std::ostream & operator << (std::ostream &os, const Variable &v)
 		default:
 			os << "unknown";
 	}
+	os << '}';
 
 	return os;
 }

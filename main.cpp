@@ -27,8 +27,6 @@ int main()
 	typedef void (*RuntimePtr)(int, void *);
 	auto entryPoint = function_cast<void (RuntimePtr)>(fn_ptr);
 	entryPoint(runcall);
-	std::cerr << " --------------------\n";
-	entryPoint(runcall);
 
 	return 0;
 }

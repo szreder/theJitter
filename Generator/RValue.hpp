@@ -4,7 +4,6 @@
 #include <variant>
 
 #include "Generator/AST.hpp"
-#include "Generator/Program.hpp"
 #include "Generator/ValueType.hpp"
 #include "Generator/Variable.hpp"
 
@@ -14,6 +13,7 @@ public:
 		FunctionCall,
 		Immediate,
 		Variable,
+		_last,
 	};
 
 	static RValue asVariable(const std::string &varName)
@@ -105,20 +105,5 @@ private:
 	std::variant <bool, int, double, std::string> m_value;
 };
 
-inline void matchTypes(RValue &leftRValue, RValue &rightRValue)
-{
-	if (leftRValue.valueType() == ValueType::Integer && rightRValue.valueType() == ValueType::Real) {
-		leftRValue.setValueType(ValueType::Real);
-		leftRValue.setValue<double>(leftRValue.value<int>());
-	}
-
-	if (leftRValue.valueType() == ValueType::Real && rightRValue.valueType() == ValueType::Integer) {
-		rightRValue.setValueType(ValueType::Real);
-		rightRValue.setValue<double>(rightRValue.value<int>());
-	}
-
-	if (leftRValue.valueType() != rightRValue.valueType()) {
-		std::cerr << "Type mismatch: " << prettyPrint(leftRValue.valueType()) << " vs " << prettyPrint(rightRValue.valueType()) << '\n';
-		abort();
-	}
-}
+void matchTypes(RValue &leftRValue, RValue &rightRValue);
+std::ostream & operator << (std::ostream &os, const RValue &rv);
