@@ -31,7 +31,7 @@ private:
 
 	std::unique_ptr <gcc_jit_context, decltype(&gcc_jit_context_release)> m_jitCtx;
 
-	std::array <gcc_jit_type *, toUnderlying(ValueType::_last) > m_basicTypes;
+	std::array <gcc_jit_type *, toUnderlying(ValueType::_last)> m_basicTypes;
 	gcc_jit_type *m_runcallPtrType;
 	gcc_jit_rvalue *m_runcallPtr;
 	gcc_jit_function *m_mainFunc;

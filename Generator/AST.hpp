@@ -23,6 +23,7 @@ public:
 		Field,
 		BinOp,
 		UnOp,
+		_last,
 	};
 
 	virtual void append(Node *n) { assert(false); }

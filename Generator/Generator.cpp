@@ -182,7 +182,8 @@ GenResult generate<Node::Type::Value>(Program &program, gcc_jit_function *func, 
 			return RValue{static_cast<const StringValue *>(v)->value()};
 	}
 
-	assert(false);
+	std::cerr << "generate<Node::Type::Value>() not implemented for value type: " << prettyPrint(v->valueType()) << '\n';
+	abort();
 	return {};
 }
 
@@ -208,8 +209,8 @@ GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *bloc
 			return generate<Node::Type::Variable>(program, func, block, src);
 	}
 
-	std::cerr << "generate() not implemented for type: " << static_cast<int>(src->type()) << '\n';
-	assert(false);
+	std::cerr << "generate() not implemented for type: " << prettyPrint(src->type()) << '\n';
+	abort();
 	return {};
 }
 
