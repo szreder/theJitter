@@ -218,7 +218,7 @@ public:
 	void print(int indent) const override
 	{
 		do_indent(indent);
-		std::cout << "true\n";
+		std::cout << std::boolalpha << m_value << '\n';
 	}
 
 	ValueType valueType() const override { return ValueType::Boolean; }
