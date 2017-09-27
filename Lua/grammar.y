@@ -93,12 +93,10 @@ expr {
 
 var_list :
 var {
-	std::cout << "new varlist with ID: " << $1 << '\n';
 	$$ = new VarList{};
 	$$->append($1);
 }
 | var_list COMMA var {
-	std::cout << "new var with ID: " << $3 << '\n';
 	$$ = $1;
 	$$->append($3);
 }
@@ -157,7 +155,6 @@ NIL {
 	$$ = new IntValue{$1};
 }
 | REAL_VALUE {
-	std::cout << "RealValue: " << $1 << '\n';
 	$$ = new RealValue{$1};
 }
 | STRING_VALUE {

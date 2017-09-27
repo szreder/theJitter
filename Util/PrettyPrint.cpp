@@ -34,7 +34,6 @@ const std::string & prettyPrint(RValue::Type t)
 	static const StringArray Strings = []{
 		StringArray result;
 
-		result[toUnderlying(RValue::Type::FunctionCall)] = "function_call";
 		result[toUnderlying(RValue::Type::Immediate)] = "immediate";
 		result[toUnderlying(RValue::Type::Variable)] = "variable";
 
@@ -56,6 +55,7 @@ const std::string & prettyPrint(ValueType vt)
 		result[toUnderlying(ValueType::Nil)] = "nil";
 		result[toUnderlying(ValueType::Integer)] = "integer";
 		result[toUnderlying(ValueType::Real)] = "real";
+		result[toUnderlying(ValueType::Function)] = "function";
 
 		return result;
 	}();

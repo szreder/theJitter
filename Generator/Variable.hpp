@@ -7,6 +7,8 @@
 
 #include "Generator/ValueType.hpp"
 
+typedef void * (*fn_ptr)(void *);
+
 struct Variable {
 	ValueType type;
 	const char *name;
@@ -16,6 +18,7 @@ struct Variable {
 		double r;
 		const char *s;
 		void *v;
+		fn_ptr f;
 	};
 };
 

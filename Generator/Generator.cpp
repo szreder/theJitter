@@ -184,13 +184,20 @@ GenResult generate<Node::Type::FunctionCall>(Program &program, gcc_jit_function 
 	char buff[30];
 
 	const FunctionCall *f = static_cast<const FunctionCall *>(src);
+	GenResult funcResolved = dispatch(program, func, block, f->functionExpr());
+	if (!funcResolved) {
+		std::cerr << "Unable to resolve function call:\n";
+		f->functionExpr()->print();
+		abort();
+	}
+
 	const ExprList *args = f->args();
 	std::vector <GenResult> exprResults = generateExprList(program, func, block, args);
 
 	for (auto i = exprResults.crbegin(); i != exprResults.crend(); ++i)
 		RUNCALL(RUNCALL_PUSH, program.allocRValue(i->value()));
 	RUNCALL(RUNCALL_PUSH, toVoidPtr(args->exprs().size()));
-	RUNCALL(RUNCALL_PUSH, program.allocRValue(f->functionExpr()));
+	RUNCALL(RUNCALL_PUSH, program.allocRValue(*funcResolved));
 	RUNCALL(RUNCALL_FUNCTION_CALL, nullptr);
 }
 

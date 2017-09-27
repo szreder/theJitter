@@ -10,7 +10,6 @@
 class RValue {
 public:
 	enum class Type {
-		FunctionCall,
 		Immediate,
 		Variable,
 		_last,
@@ -36,6 +35,8 @@ public:
 				return RValue{var->r};
 			case ValueType::String:
 				return RValue{var->s};
+			case ValueType::Function:
+				return RValue{var->f};
 		}
 
 		return RValue{};
@@ -69,11 +70,12 @@ public:
 
 
 	RValue() : m_type{Type::Immediate}, m_valueType{ValueType::Invalid} {}
-	RValue(bool v) : m_type{Type::Immediate}, m_valueType{ValueType::Boolean}, m_value{v} {}
+	explicit RValue(bool v) : m_type{Type::Immediate}, m_valueType{ValueType::Boolean}, m_value{v} {}
 	RValue(int v) : m_type{Type::Immediate}, m_valueType{ValueType::Integer}, m_value{v} {}
 	RValue(double v) : m_type{Type::Immediate}, m_valueType{ValueType::Real}, m_value{v} {}
 	RValue(const std::string &v) : m_type{Type::Immediate}, m_valueType{ValueType::String}, m_value{v} {}
 	RValue(std::string &&v) : m_type{Type::Immediate}, m_valueType{ValueType::String}, m_value{std::move(v)} {}
+	RValue(fn_ptr v) : m_type{Type::Immediate}, m_valueType{ValueType::Function}, m_value{v} {}
 
 	~RValue() = default;
 
@@ -102,7 +104,7 @@ public:
 private:
 	Type m_type;
 	ValueType m_valueType;
-	std::variant <bool, int, double, std::string> m_value;
+	std::variant <bool, int, double, std::string, void *, fn_ptr> m_value;
 };
 
 void matchTypes(RValue &leftRValue, RValue &rightRValue);

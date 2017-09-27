@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Generator/AST.hpp"
+#include "Generator/Builtins.hpp"
 #include "Generator/Program.hpp"
 #include "Generator/RValue.hpp"
 #include "Generator/Runtime.hpp"
@@ -20,15 +21,18 @@ template <typename T>
 T popData()
 {
 	assert(!dataStack.empty());
-	T result = static_cast<T>(dataStack.back());
+	void *p = dataStack.back();
 	dataStack.pop_back();
-	return result;
+	if constexpr(std::is_integral<T>::value)
+		return fromVoidPtr<T>(p);
+	else
+		return static_cast<T>(p);
 }
 
 const Variable * findVariable(const std::string *varName)
 {
 	for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
-		auto result = scope->getVar(varName);
+		auto result = scope->getVariable(varName);
 		if (result != nullptr)
 			return result;
 	}
@@ -92,6 +96,30 @@ void executeBinOp(BinOp::Type op)
 	__setVariable(varName, &result);
 }
 
+void callFunction(fn_ptr func, const std::vector <const RValue *> args)
+{
+	//TODO argument passing (after Table implementation)
+	func(nullptr);
+}
+
+void executeFunctionCall()
+{
+	const RValue *func = popData<const RValue *>();
+	RValue resolvedSymbol = resolveRValue(func);
+
+	size_t argCnt = popData<size_t>();
+	std::vector <const RValue *> args(argCnt);
+	for (size_t i = 0; i != argCnt; ++i)
+		args[i] = popData<const RValue *>();
+
+
+	if (resolvedSymbol.valueType() != ValueType::Function) {
+		std::cerr << "Attempted to call " << resolvedSymbol << '\n';
+		abort();
+	}
+	callFunction(resolvedSymbol.value<fn_ptr>(), args);
+}
+
 void unsetVariable()
 {
 	const std::string *varName = popData<const std::string *>();
@@ -101,7 +129,7 @@ void unsetVariable()
 		return;
 
 	for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
-		if (scope->removeVar(varName))
+		if (scope->removeVariable(varName))
 			return;
 	}
 }
@@ -119,14 +147,14 @@ void __setVariable(const std::string *varName, const RValue *value)
 
 	auto doSetVar = [](const std::string *name, auto val, std::vector <Scope> &scopeStack) {
 		for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
-			auto var = scope->getVar(name);
+			auto var = scope->getVariable(name);
 			if (var) {
-				scope->setVar(name, val);
+				scope->setVariable(name, val);
 				return;
 			}
 		}
 
-		scopeStack.back().setVar(name, val);
+		scopeStack.back().setVariable(name, val);
 	};
 
 	switch (value->type()) {
@@ -143,7 +171,7 @@ void __setVariable(const std::string *varName, const RValue *value)
 
 			auto scope = scopeStack.rbegin();
 			while (scope != scopeStack.rend() && otherVar == nullptr) {
-				otherVar = scope->getVar(&searchedName);
+				otherVar = scope->getVariable(&searchedName);
 				++scope;
 			}
 
@@ -164,7 +192,16 @@ void __setVariable(const std::string *varName, const RValue *value)
 
 } //namespace
 
-void runcall(int call, void *arg)
+void initRuntime(Program &program)
+{
+	Scope s;
+	RValue tmp{&ping};
+	std::string *name = program.duplicateString("ping");
+	s.setVariable(name, &tmp);
+	scopeStack.push_back(s);
+}
+
+void runcall(RuncallNum call, void *arg)
 {
 	std::cout << "==== Runcall " << call << " with arg = " << arg << '\n';
 	switch (call) {
@@ -189,6 +226,9 @@ void runcall(int call, void *arg)
 			break;
 		case RUNCALL_BINOP:
 			executeBinOp(fromVoidPtr<BinOp::Type>(arg));
+			break;
+		case RUNCALL_FUNCTION_CALL:
+			executeFunctionCall();
 			break;
 		default:
 			std::cout << "Runcall " << call << " not supported\n";

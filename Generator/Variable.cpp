@@ -14,6 +14,9 @@ std::ostream & operator << (std::ostream &os, const Variable &v)
 		case ValueType::Real:
 			os << v.r;
 			break;
+		case ValueType::Function:
+			os << v.f;
+			break;
 		default:
 			os << "unknown";
 	}

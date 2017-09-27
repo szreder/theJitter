@@ -6,10 +6,11 @@
 #include "Generator/RValue.hpp"
 #include "Generator/ValueType.hpp"
 #include "Generator/Variable.hpp"
+#include "Util/PrettyPrint.hpp"
 
 class Scope {
 public:
-	const Variable * getVar(const std::string *varName)
+	const Variable * getVariable(const std::string *varName)
 	{
 		Variable tmp;
 		tmp.name = varName->data();
@@ -19,7 +20,7 @@ public:
 		return nullptr;
 	}
 
-	void setVar(const std::string *varName, const RValue *value)
+	void setVariable(const std::string *varName, const RValue *value)
 	{
 		Variable tmp;
 		tmp.name = varName->data();
@@ -34,16 +35,19 @@ public:
 			case ValueType::Real:
 				tmp.r = value->value<double>();
 				break;
+			case ValueType::Function:
+				tmp.f = value->value<fn_ptr>();
+				break;
 			case ValueType::Nil:
 				break;
 			default:
-				std::cerr << "Unsupported value type: " << toUnderlying(tmp.type) << '\n';
+				std::cerr << "Unsupported value type: " << prettyPrint(tmp.type) << '\n';
 				break;
 		}
 		m_vars.insert(tmp);
 	}
 
-	void setVar(const std::string *varName, const Variable *value)
+	void setVariable(const std::string *varName, const Variable *value)
 	{
 		std::cerr << "Scope, set variable = " << *varName << " to: " << *value << '\n';
 		Variable tmp;
@@ -59,23 +63,26 @@ public:
 			case ValueType::Real:
 				tmp.r = value->r;
 				break;
+			case ValueType::Function:
+				tmp.f = value->f;
+				break;
 			case ValueType::Nil:
 				break;
 			default:
-				std::cerr << "Unsupported value type: " << toUnderlying(tmp.type) << '\n';
+				std::cerr << "Unsupported value type: " << prettyPrint(tmp.type) << '\n';
 				break;
 		}
 		m_vars.insert(tmp);
 	}
 
-	bool removeVar(const std::string *varName)
+	bool removeVariable(const std::string *varName)
 	{
 		Variable tmp;
 		tmp.name = varName->data();
 		return m_vars.erase(tmp) != 0;
 	}
 
-	bool removeVar(const Variable *var)
+	bool removeVariable(const Variable *var)
 	{
 		return m_vars.erase(*var);
 	}

@@ -19,6 +19,7 @@ int main()
 
 	typedef void (*RuntimePtr)(int, void *);
 	auto entryPoint = function_cast<void (RuntimePtr)>(fn_ptr);
+	initRuntime(Program::getInstance());
 	entryPoint(runcall);
 
 	return 0;

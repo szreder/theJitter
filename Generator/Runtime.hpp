@@ -1,6 +1,8 @@
 #pragma once
 
-enum __runcall_operation : int {
+typedef int RuncallNum;
+
+enum __runcall_operation : RuncallNum {
 	RUNCALL_SCOPE_PUSH,
 	RUNCALL_SCOPE_POP,
 	RUNCALL_PUSH,
@@ -10,4 +12,7 @@ enum __runcall_operation : int {
 	RUNCALL_FUNCTION_CALL,
 };
 
-void runcall(int call, void *arg);
+class Program;
+
+void initRuntime(Program &program);
+void runcall(RuncallNum call, void *arg);
