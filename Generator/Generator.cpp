@@ -68,6 +68,12 @@ GenResult generateImmediate(const RValue &opLeft, const RValue &opRight, BinOp::
 	return generateImmediateSpec<T>(opLeft, opRight, op);
 }
 
+template <typename T>
+GenResult generateImmediate(const RValue &operand, UnOp::Type op)
+{
+	return RValue::executeUnOp<T>(operand, op);
+}
+
 GenResult generateImmediate(RValue &opLeft, RValue &opRight, BinOp::Type op)
 {
 	matchTypes(opLeft, opRight);
@@ -85,6 +91,21 @@ GenResult generateImmediate(RValue &opLeft, RValue &opRight, BinOp::Type op)
 			return generateImmediate<double>(opLeft, opRight, op);
 		case ValueType::String:
 			return generateImmediate<std::string>(opLeft, opRight, op);
+	}
+
+	assert(false);
+	return {};
+}
+
+GenResult generateImmediate(RValue &operand, UnOp::Type op)
+{
+	switch (operand.valueType()) {
+		case ValueType::Boolean:
+			return generateImmediate<bool>(operand, op);
+		case ValueType::Integer:
+			return generateImmediate<int>(operand, op);
+		case ValueType::Real:
+			return generateImmediate<double>(operand, op);
 	}
 
 	assert(false);
@@ -136,7 +157,7 @@ GenResult generate<Node::Type::Assignment>(Program &program, gcc_jit_function *f
 template <>
 GenResult generate<Node::Type::BinOp>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
-	static int binopVarCnt = 0;
+	static int binOpVarCnt = 0;
 	char buff[30];
 
 	const BinOp *bo = static_cast<const BinOp *>(src);
@@ -152,13 +173,37 @@ GenResult generate<Node::Type::BinOp>(Program &program, gcc_jit_function *func, 
 	if (leftRValue.type() == RValue::Type::Immediate && rightRValue.type() == RValue::Type::Immediate)
 		return generateImmediate(leftRValue, rightRValue, bo->binOpType());
 
-	sprintf(buff, "__binop_v_%d", ++binopVarCnt);
-	gcc_jit_lvalue *binopTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+	sprintf(buff, "__binOp_v_%d", ++binOpVarCnt);
+	gcc_jit_lvalue *binOpTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
 
 	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
 	RUNCALL(RUNCALL_PUSH, program.allocRValue(rightRValue));
 	RUNCALL(RUNCALL_PUSH, program.allocRValue(leftRValue));
 	RUNCALL(RUNCALL_BINOP, toVoidPtr(bo->binOpType()));
+
+	return RValue::asVariable(std::string{buff});
+}
+
+template <>
+GenResult generate<Node::Type::UnOp>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
+{
+	static int unOpVarCnt = 0;
+	char buff[30];
+
+	const UnOp *uo = static_cast<const UnOp *>(src);
+	GenResult sub = dispatch(program, func, block, uo->operand());
+	RValue &val = sub.value();
+	checkType(val, uo->operand());
+
+	if (val.type() == RValue::Type::Immediate)
+		return generateImmediate(val, uo->unOpType());
+
+	sprintf(buff, "__unOp_v_%d", ++unOpVarCnt);
+	gcc_jit_lvalue *unOpTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+
+	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
+	RUNCALL(RUNCALL_PUSH, program.allocRValue(val));
+	RUNCALL(RUNCALL_UNOP, toVoidPtr(uo->unOpType()));
 
 	return RValue::asVariable(std::string{buff});
 }
@@ -242,6 +287,8 @@ GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *bloc
 			return generate<Node::Type::Chunk>(program, func, block, src);
 		case Node::Type::FunctionCall:
 			return generate<Node::Type::FunctionCall>(program, func, block, src);
+		case Node::Type::UnOp:
+			return generate<Node::Type::UnOp>(program, func, block, src);
 		case Node::Type::Value:
 			return generate<Node::Type::Value>(program, func, block, src);
 		case Node::Type::Variable:

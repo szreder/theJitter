@@ -39,8 +39,6 @@ public:
 	Node(Node &&) = default;
 
 	virtual bool isValue() const { return false; }
-	virtual bool isBinOp() const { return false; }
-	virtual bool isUnOp() const { return false; }
 
 	Node(const Node &) = delete;
 	Node & operator = (const Node &) = delete;
@@ -461,7 +459,6 @@ public:
 		return s[toUnderlying(t)];
 	}
 
-	bool isBinOp() const override { return true; }
 	Type binOpType() const { return m_type; }
 
 	const Node * left() const { return m_left; }
@@ -502,7 +499,15 @@ public:
 		delete m_operand;
 	}
 
-	bool isUnOp() const override { return true; }
+	static const char * toString(Type t)
+	{
+		static const char *s[] = {"-", "not", "#"};
+		return s[toUnderlying(t)];
+	}
+
+	Type unOpType() const { return m_type; }
+
+	Node * operand() const { return m_operand; }
 
 	void print(int indent) const override
 	{
@@ -513,13 +518,12 @@ public:
 
 	Node::Type type() const override { return Node::Type::UnOp; }
 
-private:
 	const char * toString() const
 	{
-		static const char *s[] = {"-", "not", "#"};
-		return s[static_cast<int>(m_type)];
+		return toString(m_type);
 	}
 
+private:
 	Type m_type;
 	Node *m_operand;
 };

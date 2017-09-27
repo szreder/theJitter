@@ -68,6 +68,23 @@ public:
 		return RValue{};
 	}
 
+	template <typename T>
+	static RValue executeUnOp(const RValue &operand, UnOp::Type op)
+	{
+		if constexpr(std::is_arithmetic<T>::value) {
+			if (op == UnOp::Type::Negate)
+				return RValue{-operand.value<T>()};
+
+		} else if constexpr(std::is_same<T, bool>::value) {
+			if (op == UnOp::Type::Not)
+				return RValue{!operand.value<T>()};
+		}
+
+		std::cerr << "Unary operation " << UnOp::toString(op) << " not possible for type " << typeid(T).name() << '\n';
+		abort();
+		return RValue{};
+	}
+
 
 	RValue() : m_type{Type::Immediate}, m_valueType{ValueType::Invalid} {}
 	explicit RValue(bool v) : m_type{Type::Immediate}, m_valueType{ValueType::Boolean}, m_value{v} {}

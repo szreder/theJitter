@@ -91,6 +91,33 @@ void executeBinOp(BinOp::Type op)
 		case ValueType::String:
 			result = RValue::executeBinOp<std::string>(opLeft, opRight, op);
 			break;
+		default:
+			std::cerr << "Binary operation " << BinOp::toString(op) << " not possible for type " << prettyPrint(opLeft.valueType()) << '\n';
+			abort();
+	}
+
+	__setVariable(varName, &result);
+}
+
+void executeUnOp(UnOp::Type op)
+{
+	const RValue *operand = popData<const RValue *>();
+	const std::string *varName = popData<const std::string *>();
+
+	RValue result = resolveRValue(operand);
+	switch (result.valueType()) {
+		case ValueType::Boolean:
+			result = RValue::executeUnOp<bool>(result, op);
+			break;
+		case ValueType::Integer:
+			result = RValue::executeUnOp<int>(result, op);
+			break;
+		case ValueType::Real:
+			result = RValue::executeUnOp<double>(result, op);
+			break;
+		default:
+			std::cerr << "Unary operation " << UnOp::toString(op) << " not possible for type " << prettyPrint(result.valueType()) << '\n';
+			break;
 	}
 
 	__setVariable(varName, &result);
@@ -226,6 +253,9 @@ void runcall(RuncallNum call, void *arg)
 			break;
 		case RUNCALL_BINOP:
 			executeBinOp(fromVoidPtr<BinOp::Type>(arg));
+			break;
+		case RUNCALL_UNOP:
+			executeUnOp(fromVoidPtr<UnOp::Type>(arg));
 			break;
 		case RUNCALL_FUNCTION_CALL:
 			executeFunctionCall();
