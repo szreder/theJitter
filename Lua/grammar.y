@@ -25,7 +25,7 @@ int yydebug = 1;
 	double real_value;
 	int int_value;
 	char *str;
-	TableValue *table_value;
+	TableCtor *table;
 	Field *field;
 }
 
@@ -34,7 +34,7 @@ int yydebug = 1;
 %type <func_call> func_call
 %type <var_list> var_list
 %type <str> var
-%type <table_value> field_list table_ctor
+%type <table> field_list table_ctor
 %type <field> field
 
 %token <int_value> INT_VALUE
@@ -179,6 +179,7 @@ NIL {
 	$$ = new UnOp{UnOp::Type::Negate, $2};
 }
 | table_ctor {
+	std::cout << "table ctor\n";
 	$$ = $1;
 }
 | prefix_expr {
@@ -188,27 +189,30 @@ NIL {
 
 table_ctor :
 '{' '}' {
-	$$ = new TableValue{};
+	std::cout << "empty table ctor\n";
+	$$ = new TableCtor{};
 }
 | '{' field_list '}' {
+	std::cout << "field table ctor\n";
 	$$ = $2;
 }
 
 field_list :
 field {
-	$$ = new TableValue{};
+	std::cout << "new TableCtorValue\n";
+	$$ = new TableCtor{};
 	$$->append($1);
 }
-| field_list ',' field {
+| field_list COMMA field {
 	$$ = $1;
 	$$->append($3);
 }
 
 field :
-'[' expr ']' '=' expr {
+'[' expr ']' ASSIGN expr {
 	$$ = new Field{$2, $5};
 }
-| ID '=' expr {
+| ID ASSIGN expr {
 	$$ = new Field{$1, $3};
 }
 | expr {

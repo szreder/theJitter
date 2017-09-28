@@ -4,7 +4,6 @@
 #include <variant>
 
 #include "Generator/AST.hpp"
-#include "Generator/ValueType.hpp"
 #include "Generator/Variable.hpp"
 
 class RValue {
@@ -28,15 +27,15 @@ public:
 	{
 		switch (var->type) {
 			case ValueType::Boolean:
-				return RValue{var->b};
+				return RValue{std::get<bool>(var->value)};
 			case ValueType::Integer:
-				return RValue{var->i};
+				return RValue{std::get<int>(var->value)};
 			case ValueType::Real:
-				return RValue{var->r};
+				return RValue{std::get<double>(var->value)};
 			case ValueType::String:
-				return RValue{var->s};
+				return RValue{std::get<std::string>(var->value)};
 			case ValueType::Function:
-				return RValue{var->f};
+				return RValue{std::get<fn_ptr>(var->value)};
 		}
 
 		return RValue{};
@@ -93,6 +92,7 @@ public:
 	RValue(const std::string &v) : m_type{Type::Immediate}, m_valueType{ValueType::String}, m_value{v} {}
 	RValue(std::string &&v) : m_type{Type::Immediate}, m_valueType{ValueType::String}, m_value{std::move(v)} {}
 	RValue(fn_ptr v) : m_type{Type::Immediate}, m_valueType{ValueType::Function}, m_value{v} {}
+	RValue(std::shared_ptr <Table> table) : m_type{Type::Immediate}, m_valueType{ValueType::Table}, m_value{table} {}
 
 	~RValue() = default;
 
@@ -115,13 +115,15 @@ public:
 	template <typename T>
 	const T & value() const { return std::get<T>(m_value); }
 
+	const ValueVariant value() const { return m_value; }
+
 	template <typename T>
 	void setValue(const T &v) { m_value = v; }
 
 private:
 	Type m_type;
 	ValueType m_valueType;
-	std::variant <bool, int, double, std::string, void *, fn_ptr> m_value;
+	ValueVariant m_value;
 };
 
 void matchTypes(RValue &leftRValue, RValue &rightRValue);

@@ -25,25 +25,9 @@ public:
 		Variable tmp;
 		tmp.name = varName->data();
 		tmp.type = value->valueType();
-		switch (tmp.type) {
-			case ValueType::Boolean:
-				tmp.b = value->value<bool>();
-				break;
-			case ValueType::Integer:
-				tmp.i = value->value<int>();
-				break;
-			case ValueType::Real:
-				tmp.r = value->value<double>();
-				break;
-			case ValueType::Function:
-				tmp.f = value->value<fn_ptr>();
-				break;
-			case ValueType::Nil:
-				break;
-			default:
-				std::cerr << "Unsupported value type: " << prettyPrint(tmp.type) << '\n';
-				break;
-		}
+		tmp.value = value->value();
+
+		m_vars.erase(tmp);
 		m_vars.insert(tmp);
 	}
 
@@ -53,25 +37,8 @@ public:
 		Variable tmp;
 		tmp.name = varName->data();
 		tmp.type = value->type;
-		switch (tmp.type) {
-			case ValueType::Boolean:
-				tmp.b = value->b;
-				break;
-			case ValueType::Integer:
-				tmp.i = value->i;
-				break;
-			case ValueType::Real:
-				tmp.r = value->r;
-				break;
-			case ValueType::Function:
-				tmp.f = value->f;
-				break;
-			case ValueType::Nil:
-				break;
-			default:
-				std::cerr << "Unsupported value type: " << prettyPrint(tmp.type) << '\n';
-				break;
-		}
+		tmp.value = value->value;
+		m_vars.erase(tmp);
 		m_vars.insert(tmp);
 	}
 

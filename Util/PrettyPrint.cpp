@@ -19,6 +19,7 @@ const std::string & prettyPrint(Node::Type t)
 		result[toUnderlying(Node::Type::Assignment)] = "assignment";
 		result[toUnderlying(Node::Type::Value)] = "value";
 		result[toUnderlying(Node::Type::Field)] = "field";
+		result[toUnderlying(Node::Type::TableCtor)] = "table_constructor";
 		result[toUnderlying(Node::Type::BinOp)] = "binary_op";
 		result[toUnderlying(Node::Type::UnOp)] = "unary_op";
 
@@ -56,6 +57,7 @@ const std::string & prettyPrint(ValueType vt)
 		result[toUnderlying(ValueType::Integer)] = "integer";
 		result[toUnderlying(ValueType::Real)] = "real";
 		result[toUnderlying(ValueType::Function)] = "function";
+		result[toUnderlying(ValueType::Table)] = "table";
 
 		return result;
 	}();

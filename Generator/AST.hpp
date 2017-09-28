@@ -20,6 +20,7 @@ public:
 		FunctionCall,
 		Assignment,
 		Value,
+		TableCtor,
 		Field,
 		BinOp,
 		UnOp,
@@ -334,15 +335,15 @@ public:
 		NoIndex,
 	};
 
-	constexpr Field(Node *expr, Node *val) : m_type{Type::Brackets}, m_expr{expr}, m_value{val} {}
-	Field(const std::string &s, Node *val) : m_type{Type::Literal}, m_fieldName{s}, m_value{val} {}
-	constexpr Field( Node *val) : m_type{Type::NoIndex}, m_expr{nullptr}, m_value{val} {}
+	constexpr Field(Node *expr, Node *val) : m_type{Type::Brackets}, m_indexExpr{expr}, m_valueExpr{val} {}
+	Field(const std::string &s, Node *val) : m_type{Type::Literal}, m_fieldName{s}, m_valueExpr{val} {}
+	constexpr Field(Node *val) : m_type{Type::NoIndex}, m_indexExpr{nullptr}, m_valueExpr{val} {}
 
 	~Field()
 	{
 		if (m_type == Type::Brackets)
-			delete m_expr;
-		delete m_value;
+			delete m_indexExpr;
+		delete m_valueExpr;
 	}
 
 	void print(int indent) const override
@@ -351,7 +352,7 @@ public:
 		switch (m_type) {
 			case Type::Brackets:
 				std::cout << "Expr to expr:\n";
-				m_expr->print(indent + 1);
+				m_indexExpr->print(indent + 1);
 				break;
 			case Type::Literal:
 				std::cout << "Name to expr:\n";
@@ -363,27 +364,35 @@ public:
 				break;
 		}
 
-		m_value->print(indent + 1);
+		m_valueExpr->print(indent + 1);
 	}
 
+	Type fieldType() const { return m_type; }
+
 	Node::Type type() const override { return Node::Type::Field; }
+
+	const std::string & fieldName() const { return m_fieldName; }
+	const Node * indexExpr() const { return m_indexExpr; }
+	const Node * valueExpr() const { return m_valueExpr; }
 
 private:
 	Type m_type;
 	union {
-		Node *m_expr;
 		std::string m_fieldName;
+		Node *m_indexExpr;
 	};
-	Node *m_value;
+	Node *m_valueExpr;
 };
 
-class TableValue : public Value {
+class TableCtor : public Node {
 public:
-	~TableValue()
+	~TableCtor()
 	{
 		for (auto p : m_fields)
 			delete p;
 	}
+
+	void append(Field *f) { m_fields.push_back(f); }
 
 	void print(int indent) const override
 	{
@@ -393,12 +402,9 @@ public:
 			p->print(indent + 1);
 	}
 
-	ValueType valueType() const override { return ValueType::Table; }
+	const std::vector <Field *> & fields() const { return m_fields; }
 
-	void addField(Field *f)
-	{
-		m_fields.push_back(f);
-	}
+	Node::Type type() const override { return Node::Type::TableCtor; }
 private:
 	std::vector <Field *> m_fields;
 };

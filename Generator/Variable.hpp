@@ -2,24 +2,21 @@
 
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <string_view>
 #include <unordered_set>
+#include <variant>
 
+#include "Generator/Table.hpp"
 #include "Generator/ValueType.hpp"
 
 typedef void * (*fn_ptr)(void *);
+typedef std::variant <bool, int, double, std::string, void *, fn_ptr, std::shared_ptr <Table> > ValueVariant;
 
 struct Variable {
 	ValueType type;
 	const char *name;
-	union {
-		bool b;
-		int i;
-		double r;
-		const char *s;
-		void *v;
-		fn_ptr f;
-	};
+	ValueVariant value;
 };
 
 std::ostream & operator << (std::ostream &os, const Variable &v);

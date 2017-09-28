@@ -244,6 +244,53 @@ GenResult generate<Node::Type::FunctionCall>(Program &program, gcc_jit_function 
 	RUNCALL(RUNCALL_PUSH, toVoidPtr(args->exprs().size()));
 	RUNCALL(RUNCALL_PUSH, program.allocRValue(*funcResolved));
 	RUNCALL(RUNCALL_FUNCTION_CALL, nullptr);
+
+	//TODO result of function call
+	return {};
+}
+
+template <>
+GenResult generate<Node::Type::TableCtor>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
+{
+	const TableCtor *tv = static_cast<const TableCtor *>(src);
+
+	static int tableVarCnt = 0;
+	char buff[30];
+
+	sprintf(buff, "__table_v_%d", ++tableVarCnt);
+	gcc_jit_lvalue *tableTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
+
+	auto fields = tv->fields();
+
+	int fieldCounter = 0;
+	for (const auto &field : fields) {
+		if (field->fieldType() == Field::Type::NoIndex) {
+			RUNCALL(RUNCALL_PUSH, program.allocRValue(*dispatch(program, func, block, field->valueExpr())));
+			RUNCALL(RUNCALL_PUSH, program.allocRValue(RValue{++fieldCounter}));
+		}
+	}
+
+	for (const auto &field : fields) {
+		if (field->fieldType() != Field::Type::NoIndex) {
+			RValue index;
+			switch (field->fieldType()) {
+				case Field::Type::Brackets:
+					index = *dispatch(program, func, block, field->indexExpr());
+					break;
+				case Field::Type::Literal:
+					index = RValue{field->fieldName()};
+					break;
+			}
+			RUNCALL(RUNCALL_PUSH, program.allocRValue(*dispatch(program, func, block, field->valueExpr())));
+			RUNCALL(RUNCALL_PUSH, program.allocRValue(index));
+		}
+	}
+
+	RUNCALL(RUNCALL_PUSH, toVoidPtr(fields.size()));
+	RUNCALL(RUNCALL_TABLE_CTOR, nullptr);
+
+	return RValue::asVariable(std::string{buff});
 }
 
 template <>
@@ -287,6 +334,8 @@ GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *bloc
 			return generate<Node::Type::Chunk>(program, func, block, src);
 		case Node::Type::FunctionCall:
 			return generate<Node::Type::FunctionCall>(program, func, block, src);
+		case Node::Type::TableCtor:
+			return generate<Node::Type::TableCtor>(program, func, block, src);
 		case Node::Type::UnOp:
 			return generate<Node::Type::UnOp>(program, func, block, src);
 		case Node::Type::Value:

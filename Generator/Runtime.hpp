@@ -11,6 +11,7 @@ enum __runcall_operation : RuncallNum {
 	RUNCALL_BINOP,
 	RUNCALL_UNOP,
 	RUNCALL_FUNCTION_CALL,
+	RUNCALL_TABLE_CTOR,
 };
 
 class Program;

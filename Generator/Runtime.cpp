@@ -16,6 +16,7 @@ std::vector <Scope> scopeStack;
 std::vector <void *> dataStack;
 
 void __setVariable(const std::string *varName, const RValue *value);
+void __setVariable(const std::string *varName, RValue &&value);
 
 template <typename T>
 T popData()
@@ -29,19 +30,16 @@ T popData()
 		return static_cast<T>(p);
 }
 
-const Variable * findVariable(const std::string *varName)
+std::pair <Scope *, const Variable *> __findScope(const std::string *varName)
 {
-	for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
-		auto result = scope->getVariable(varName);
-		if (result != nullptr)
-			return result;
+	for (size_t i = scopeStack.size(); i > 0; --i) {
+		Scope *scope = &scopeStack[i - 1];
+		auto var = scope->getVariable(varName);
+		if (var)
+			return std::make_pair(scope, var);
 	}
-	return nullptr;
-}
 
-const Variable * findVariable(const std::string &varName)
-{
-	return findVariable(&varName);
+	return {nullptr, nullptr};
 }
 
 RValue resolveRValue(const RValue *src)
@@ -52,7 +50,7 @@ RValue resolveRValue(const RValue *src)
 	switch (src->type()) {
 		case RValue::Type::Variable: {
 			const auto &varName = src->value<std::string>();
-			auto var = findVariable(varName);
+			auto [_, var] = __findScope(&varName);
 			if (!var) {
 				std::cerr << "Cannot resolve variable: " << varName << '\n';
 				abort();
@@ -139,7 +137,6 @@ void executeFunctionCall()
 	for (size_t i = 0; i != argCnt; ++i)
 		args[i] = popData<const RValue *>();
 
-
 	if (resolvedSymbol.valueType() != ValueType::Function) {
 		std::cerr << "Attempted to call " << resolvedSymbol << '\n';
 		abort();
@@ -147,18 +144,31 @@ void executeFunctionCall()
 	callFunction(resolvedSymbol.value<fn_ptr>(), args);
 }
 
+void constructTable()
+{
+	size_t fieldCnt = popData<size_t>();
+
+	std::shared_ptr <Table> table = std::make_shared<Table>();
+
+	while (fieldCnt != 0) {
+		--fieldCnt;
+		const RValue *indexExpr = popData<const RValue *>();
+		const RValue *valueExpr = popData<const RValue *>();
+	}
+
+	const std::string *varName = popData<const std::string *>();
+
+	RValue result{table};
+	__setVariable(varName, &result);
+}
+
 void unsetVariable()
 {
 	const std::string *varName = popData<const std::string *>();
-	auto var = findVariable(varName);
+	auto [scope, var] = __findScope(varName);
 
-	if (!var)
-		return;
-
-	for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
-		if (scope->removeVariable(varName))
-			return;
-	}
+	if (scope)
+		scope->removeVariable(var);
 }
 
 void setVariable()
@@ -168,46 +178,36 @@ void setVariable()
 	__setVariable(varName, value);
 }
 
+template <typename T>
+void __doSetVariable(const std::string *varName, T &&value)
+{
+	auto [scope, var] = __findScope(varName);
+	if (scope)
+		scope->setVariable(varName, std::forward<T>(value));
+	else
+		scopeStack.back().setVariable(varName, std::forward<T>(value));
+}
+
 void __setVariable(const std::string *varName, const RValue *value)
 {
 	std::cout << "setVariable " << *varName << '\n';
 
-	auto doSetVar = [](const std::string *name, auto val, std::vector <Scope> &scopeStack) {
-		for (auto scope = scopeStack.rbegin(); scope != scopeStack.rend(); ++scope) {
-			auto var = scope->getVariable(name);
-			if (var) {
-				scope->setVariable(name, val);
-				return;
-			}
-		}
-
-		scopeStack.back().setVariable(name, val);
-	};
-
 	switch (value->type()) {
 		case RValue::Type::Immediate: {
-			doSetVar(varName, value, scopeStack);
+			__doSetVariable(varName, value);
 			break;
 		}
 
 		case RValue::Type::Variable: {
-			const Variable *otherVar = nullptr;
 			const std::string &searchedName = value->value<std::string>();
+			auto [scope, var] = __findScope(&searchedName);
 
-			std::cerr << "setVariable(varName = " << *varName << ") from varName = " << searchedName << '\n';
-
-			auto scope = scopeStack.rbegin();
-			while (scope != scopeStack.rend() && otherVar == nullptr) {
-				otherVar = scope->getVariable(&searchedName);
-				++scope;
-			}
-
-			if (otherVar == nullptr) {
+			if (!scope) {
 				std::cerr << "Variable " << searchedName << " not in scope\n";
 				abort();
 			}
 
-			doSetVar(varName, otherVar, scopeStack);
+			__doSetVariable(varName, var);
 			break;
 		}
 
@@ -259,6 +259,9 @@ void runcall(RuncallNum call, void *arg)
 			break;
 		case RUNCALL_FUNCTION_CALL:
 			executeFunctionCall();
+			break;
+		case RUNCALL_TABLE_CTOR:
+			constructTable();
 			break;
 		default:
 			std::cout << "Runcall " << call << " not supported\n";
