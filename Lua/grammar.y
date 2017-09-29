@@ -7,6 +7,7 @@ int yylex();
 int yyerror(const char *s)
 {
 	std::cerr << s << '\n';
+	return 1;
 }
 
 Lua::Node *root;
@@ -178,7 +179,6 @@ NIL {
 	$$ = new Lua::UnOp{Lua::UnOp::Type::Negate, $2};
 }
 | table_ctor {
-	std::cout << "table ctor\n";
 	$$ = $1;
 }
 | prefix_expr {
@@ -188,17 +188,14 @@ NIL {
 
 table_ctor :
 '{' '}' {
-	std::cout << "empty table ctor\n";
 	$$ = new Lua::TableCtor{};
 }
 | '{' field_list '}' {
-	std::cout << "field table ctor\n";
 	$$ = $2;
 }
 
 field_list :
 field {
-	std::cout << "new Lua::TableCtorValue\n";
 	$$ = new Lua::TableCtor{};
 	$$->append($1);
 }

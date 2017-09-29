@@ -17,7 +17,6 @@ std::vector <Scope> scopeStack;
 std::vector <void *> dataStack;
 
 void __setVariable(const std::string *varName, const RValue *value);
-void __setVariable(const std::string *varName, RValue &&value);
 
 template <typename T>
 T popData()
@@ -51,7 +50,7 @@ RValue resolveRValue(const RValue *src)
 	switch (src->type()) {
 		case RValue::Type::Variable: {
 			const auto &varName = src->value<std::string>();
-			auto [_, var] = __findScope(&varName);
+			const Variable *var = __findScope(&varName).second;
 			if (!var) {
 				std::cerr << "Cannot resolve variable: " << varName << '\n';
 				abort();
@@ -179,7 +178,7 @@ void setVariable()
 template <typename T>
 void __doSetVariable(const std::string *varName, T &&value)
 {
-	auto [scope, var] = __findScope(varName);
+	Scope *scope = __findScope(varName).first;
 	if (scope)
 		scope->setVariable(varName, std::forward<T>(value));
 	else

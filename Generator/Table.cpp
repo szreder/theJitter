@@ -6,6 +6,7 @@ Value Table::value(const RValue &key) const
 	auto iter = m_data.find(key.value());
 	if (iter == m_data.end())
 		return {};
+	return iter->second;
 }
 
 void Table::setValue(const RValue &key, const RValue &value)

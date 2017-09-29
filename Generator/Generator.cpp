@@ -93,6 +93,8 @@ GenResult generateImmediate(RValue &opLeft, RValue &opRight, BinOp::Type op)
 			return generateImmediate<double>(opLeft, opRight, op);
 		case ValueType::String:
 			return generateImmediate<std::string>(opLeft, opRight, op);
+		default:
+			break;
 	}
 
 	assert(false);
@@ -108,6 +110,8 @@ GenResult generateImmediate(RValue &operand, UnOp::Type op)
 			return generateImmediate<int>(operand, op);
 		case ValueType::Real:
 			return generateImmediate<double>(operand, op);
+		default:
+			break;
 	}
 
 	assert(false);
@@ -115,8 +119,6 @@ GenResult generateImmediate(RValue &operand, UnOp::Type op)
 }
 
 template <Node::Type type>
-GenResult generate(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src);
-
 GenResult generate(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src);
 
 std::vector <GenResult> generateExprList(Program &program, gcc_jit_function *func, gcc_jit_block *block, const ExprList *exprList)
@@ -184,7 +186,7 @@ GenResult generate<Node::Type::BinOp>(Program &program, gcc_jit_function *func, 
 		return generateImmediate(leftRValue, rightRValue, bo->binOpType());
 
 	sprintf(buff, "__binOp_v_%d", ++binOpVarCnt);
-	gcc_jit_lvalue *binOpTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+	gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
 
 	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
 	RUNCALL(RUNCALL_PUSH, program.allocRValue(rightRValue));
@@ -209,7 +211,7 @@ GenResult generate<Node::Type::UnOp>(Program &program, gcc_jit_function *func, g
 		return generateImmediate(val, uo->unOpType());
 
 	sprintf(buff, "__unOp_v_%d", ++unOpVarCnt);
-	gcc_jit_lvalue *unOpTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+	gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
 
 	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
 	RUNCALL(RUNCALL_PUSH, program.allocRValue(val));
@@ -250,7 +252,7 @@ GenResult generate<Node::Type::FunctionCall>(Program &program, gcc_jit_function 
 	std::vector <GenResult> exprResults = generateExprList(program, func, block, args);
 
 	sprintf(buff, "__fn_args_v_%d", ++funcArgCnt);
-	gcc_jit_lvalue *argsTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+	gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
 
 	for (auto i = exprResults.crbegin(); i != exprResults.crend(); ++i)
 		RUNCALL(RUNCALL_PUSH, program.allocRValue(i->value()));
@@ -271,7 +273,7 @@ GenResult generate<Node::Type::TableCtor>(Program &program, gcc_jit_function *fu
 	char buff[30];
 
 	sprintf(buff, "__table_v_%d", ++tableVarCnt);
-	gcc_jit_lvalue *tableTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+	gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
 	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
 
 	auto fields = tv->fields();
@@ -293,6 +295,8 @@ GenResult generate<Node::Type::TableCtor>(Program &program, gcc_jit_function *fu
 					break;
 				case Field::Type::Literal:
 					index = RValue{field->fieldName()};
+					break;
+				default:
 					break;
 			}
 			RUNCALL(RUNCALL_PUSH, program.allocRValue(*dispatch(program, func, block, field->valueExpr())));
@@ -322,6 +326,8 @@ GenResult generate<Node::Type::Value>(Program &program, gcc_jit_function *func, 
 			return RValue{static_cast<const RealValue *>(v)->value()};
 		case ValueType::String:
 			return RValue{static_cast<const StringValue *>(v)->value()};
+		default:
+			break;
 	}
 
 	std::cerr << "generate<Node::Type::Value>() not implemented for value type: " << prettyPrint(v->valueType()) << '\n';
@@ -355,6 +361,8 @@ GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *bloc
 			return generate<Node::Type::Value>(program, func, block, src);
 		case Node::Type::LValue:
 			return generate<Node::Type::LValue>(program, func, block, src);
+		default:
+			break;
 	}
 
 	std::cerr << "generate() not implemented for type: " << prettyPrint(src->type()) << '\n';

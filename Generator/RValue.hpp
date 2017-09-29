@@ -54,6 +54,8 @@ public:
 					return RValue{opLeft.value<T>() * opRight.value<T>()};
 				case Lua::BinOp::Type::Divide:
 					return RValue{opLeft.value<T>() / opRight.value<T>()};
+				default:
+					break;
 			}
 		}
 

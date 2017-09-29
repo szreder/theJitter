@@ -31,6 +31,8 @@ std::ostream & operator << (std::ostream &os, const RValue &rv)
 		case RValue::Type::Variable:
 			os << " name = " << rv.value<std::string>();
 			break;
+		default:
+			break;
 	}
 
 	return os;
