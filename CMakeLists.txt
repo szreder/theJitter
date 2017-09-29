@@ -10,7 +10,7 @@ bison_target(Parser Lua/grammar.y ${CMAKE_CURRENT_BINARY_DIR}/Parser.cpp)
 flex_target(Scanner Lua/scanner.l ${CMAKE_CURRENT_BINARY_DIR}/Scanner.cpp)
 add_flex_bison_dependency(Scanner Parser)
 
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 set(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/bin")
 
 set (SRC_FILES

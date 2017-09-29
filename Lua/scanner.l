@@ -1,7 +1,7 @@
 %{
 
 #include "Generator/AST.hpp"
-#include "grammar.tab.h"
+#include "Parser.hpp"
 
 %}
 

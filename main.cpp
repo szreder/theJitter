@@ -1,12 +1,11 @@
 #include "Generator/AST.hpp"
-#include "grammar.tab.h"
-
 extern Lua::Node *root;
 
 #include "Generator/Generator.hpp"
 #include "Generator/Program.hpp"
 #include "Generator/Runtime.hpp"
 #include "Util/Casts.hpp"
+#include "Parser.hpp"
 
 int main()
 {
