@@ -24,6 +24,7 @@ int yydebug = 1;
 	Lua::Node *node;
 	Lua::ExprList *expr_list;
 	Lua::VarList *var_list;
+	Lua::LValue *var;
 	Lua::FunctionCall *func_call;
 	Lua::TableCtor *table;
 	Lua::Field *field;
@@ -33,7 +34,7 @@ int yydebug = 1;
 %type <expr_list> args expr_list
 %type <func_call> func_call
 %type <var_list> var_list
-%type <str> var
+%type <var> var
 %type <table> field_list table_ctor
 %type <field> field
 
@@ -103,21 +104,19 @@ var {
 
 var :
 ID {
-	$$ = $1;
+	$$ = new Lua::LValue{$1};
+	free($1);
 }
-/*
 | prefix_expr "[" expr "]" {
-	$$ =
+	$$ = new Lua::LValue{$1, $3};
 }
 | prefix_expr "." ID {
-
+	$$ = new Lua::LValue{$1, new Lua::LValue{$3}};
 }
-*/
 
 prefix_expr :
 var {
-	$$ = new Lua::VarNode{$1};
-	free($1);
+	$$ = $1;
 }
 | '(' expr ')' {
 	$$ = $2;

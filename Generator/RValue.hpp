@@ -16,13 +16,29 @@ public:
 		_last,
 	};
 
-	static RValue asVariable(const std::string &varName)
+	static RValue asVariable(const std::string &name)
 	{
 		RValue result;
 		result.m_type = Type::Variable;
 		result.m_valueType = ValueType::Unknown;
-		result.m_value = varName;
+		result.m_value = name;
 		return result;
+	}
+
+	static RValue fromLValue(const Lua::LValue *lval)
+	{
+		RValue result;
+		result.m_type = Type::Variable;
+		result.m_valueType = ValueType::Unknown;
+
+		if (lval->lvalueType() == Lua::LValue::Type::Name) {
+			result.m_value = lval->name();
+			return result;
+		}
+
+		std::cerr << "Not implemented yet\n";
+		abort();
+		return RValue{};
 	}
 
 	template <typename T>

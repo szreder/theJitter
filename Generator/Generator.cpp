@@ -142,15 +142,23 @@ GenResult generate<Node::Type::Assignment>(Program &program, gcc_jit_function *f
 
 	size_t i = 0;
 	const VarList *varList = c->varList();
-	for (const std::string &var : varList->vars()) {
-		RUNCALL(RUNCALL_PUSH, program.duplicateString(var));
-		if (i >= exprResults.size() || !exprResults[i]) {
-			RUNCALL(RUNCALL_VARIABLE_UNSET, nullptr);
-		} else {
-			RUNCALL(RUNCALL_PUSH, program.allocRValue(exprResults[i].value()));
-			RUNCALL(RUNCALL_VARIABLE_SET, nullptr);
+	for (const LValue *lval : varList->vars()) {
+		switch (lval->lvalueType()) {
+			case LValue::Type::Name:
+				RUNCALL(RUNCALL_PUSH, program.duplicateString(lval->name()));
+				if (i >= exprResults.size() || !exprResults[i]) {
+					RUNCALL(RUNCALL_VARIABLE_UNSET, nullptr);
+				} else {
+					RUNCALL(RUNCALL_PUSH, program.allocRValue(exprResults[i].value()));
+					RUNCALL(RUNCALL_VARIABLE_SET, nullptr);
+				}
+				++i;
+				break;
+			case LValue::Type::Expression:
+				std::cerr << "Not implemented yet\n";
+				abort();
+				break;
 		}
-		++i;
 	}
 
 	return {};
@@ -322,10 +330,10 @@ GenResult generate<Node::Type::Value>(Program &program, gcc_jit_function *func, 
 }
 
 template <>
-GenResult generate<Node::Type::Variable>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
+GenResult generate<Node::Type::LValue>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
-	const VarNode *v = static_cast<const VarNode *>(src);
-	return RValue::asVariable(v->name());
+	const LValue *lval = static_cast<const LValue *>(src);
+	return RValue::fromLValue(lval);
 }
 
 GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
@@ -345,8 +353,8 @@ GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *bloc
 			return generate<Node::Type::UnOp>(program, func, block, src);
 		case Node::Type::Value:
 			return generate<Node::Type::Value>(program, func, block, src);
-		case Node::Type::Variable:
-			return generate<Node::Type::Variable>(program, func, block, src);
+		case Node::Type::LValue:
+			return generate<Node::Type::LValue>(program, func, block, src);
 	}
 
 	std::cerr << "generate() not implemented for type: " << prettyPrint(src->type()) << '\n';

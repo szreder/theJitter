@@ -14,7 +14,7 @@ const std::string & prettyPrint(Lua::Node::Type t)
 		result[toUnderlying(Lua::Node::Type::Chunk)] = "chunk";
 		result[toUnderlying(Lua::Node::Type::ExprList)] = "expression_list";
 		result[toUnderlying(Lua::Node::Type::VarList)] = "variable_list";
-		result[toUnderlying(Lua::Node::Type::Variable)] = "variable";
+		result[toUnderlying(Lua::Node::Type::LValue)] = "l-value";
 		result[toUnderlying(Lua::Node::Type::FunctionCall)] = "function_call";
 		result[toUnderlying(Lua::Node::Type::Assignment)] = "assignment";
 		result[toUnderlying(Lua::Node::Type::Value)] = "value";

@@ -18,7 +18,7 @@ public:
 		Chunk,
 		ExprList,
 		VarList,
-		Variable,
+		LValue,
 		FunctionCall,
 		Assignment,
 		Value,
@@ -123,15 +123,60 @@ private:
 	std::vector <Node *> m_exprs;
 };
 
-class VarList : public Node {
+class LValue : public Node {
 public:
-	void append(const char *s)
+	enum class Type {
+		Expression,
+		Name,
+	};
+
+	LValue(const char *varName) : m_type{Type::Name}, m_variableName{varName} {}
+	LValue(Node *expr, Node *next) : m_type{Type::Expression}, m_expr{expr}, m_next{next} {}
+	~LValue()
 	{
-		std::cout << "VarList::append(" << s << ")\n";
-		m_vars.emplace_back(s);
+		if (m_type == Type::Expression) {
+			delete m_expr;
+			delete m_next;
+		}
 	}
 
-	const std::vector <std::string> & vars() const
+	void print(int indent) const override
+	{
+		do_indent(indent);
+		if (m_type == Type::Expression) {
+			std::cout << "LValue:\n";
+			m_expr->print(indent + 1);
+			m_next->print(indent + 1);
+		} else {
+			std::cout << "Variable name: " << m_variableName << '\n';
+		}
+	}
+
+	const std::string & name() const { return m_variableName; }
+	const Node * expr() const { return m_expr; }
+	const Node * next() const { return m_next; }
+
+	Type lvalueType() const { return m_type; }
+	Node::Type type() const override { return Node::Type::LValue; }
+private:
+	Type m_type;
+	union {
+		std::string m_variableName;
+		struct {
+			Node *m_expr;
+			Node *m_next;
+		};
+	};
+};
+
+class VarList : public Node {
+public:
+	void append(LValue *lval)
+	{
+		m_vars.push_back(lval);
+	}
+
+	const std::vector <LValue *> & vars() const
 	{
 		return m_vars;
 	}
@@ -140,15 +185,9 @@ public:
 	{
 		do_indent(indent);
 		std::cout << "Variable list: [\n";
-		bool first = true;
-		for (const std::string &var : m_vars) {
-			if (!first)
-				std::cout << ",\n";
-			first = false;
-			do_indent(indent + 1);
-			std::cout << var;
+		for (const LValue *lv : m_vars) {
+			lv->print(indent + 1);
 		}
-		std::cout << '\n';
 		do_indent(indent);
 		std::cout << "]\n";
 	}
@@ -156,7 +195,7 @@ public:
 	Node::Type type() const override { return Type::VarList; }
 
 private:
-	std::vector <std::string> m_vars;
+	std::vector <LValue *> m_vars;
 };
 
 class Assignment : public Node {
@@ -272,28 +311,10 @@ public:
 	const ExprList * args() const { return m_args; }
 	void setArgs(ExprList *args) { m_args = args; }
 
-
 	Node::Type type() const override { return Type::FunctionCall; }
 private:
 	Node *m_functionExpr;
 	ExprList *m_args;
-};
-
-class VarNode : public Node {
-public:
-	VarNode(const char *varname) : m_variableName{varname} {}
-
-	void print(int indent) const override
-	{
-		do_indent(indent);
-		std::cout << "Var: " << m_variableName << '\n';
-	}
-
-	const std::string & name() const { return m_variableName; }
-
-	Node::Type type() const override { return Type::Variable; }
-private:
-	std::string m_variableName;
 };
 
 class IntValue : public Value {
