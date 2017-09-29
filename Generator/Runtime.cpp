@@ -56,7 +56,7 @@ RValue resolveRValue(const RValue *src)
 				std::cerr << "Cannot resolve variable: " << varName << '\n';
 				abort();
 			}
-			return RValue::fromVariable(var);
+			return RValue{var};
 		} default:
 			std::cerr << "Cannot resolve RValue of type = " << toUnderlying(src->type()) << '\n';
 			abort();
@@ -122,27 +122,23 @@ void executeUnOp(Lua::UnOp::Type op)
 	__setVariable(varName, &result);
 }
 
-void callFunction(fn_ptr func, const std::vector <const RValue *> args)
-{
-	//TODO argument passing (after Table implementation)
-	func(nullptr);
-}
-
 void executeFunctionCall()
 {
-	const RValue *func = popData<const RValue *>();
-	RValue resolvedSymbol = resolveRValue(func);
+	const RValue *rval_fn = popData<const RValue *>();
+	RValue resolvedSymbol = resolveRValue(rval_fn);
 
 	size_t argCnt = popData<size_t>();
-	std::vector <const RValue *> args(argCnt);
+	__arg_vec args(argCnt);
 	for (size_t i = 0; i != argCnt; ++i)
-		args[i] = popData<const RValue *>();
+		args[i] = resolveRValue(popData<const RValue *>());
 
 	if (resolvedSymbol.valueType() != ValueType::Function) {
 		std::cerr << "Attempted to call " << resolvedSymbol << '\n';
 		abort();
 	}
-	callFunction(resolvedSymbol.value<fn_ptr>(), args);
+
+	auto func = resolvedSymbol.value<fn_ptr>();
+	func(&args);
 }
 
 void constructTable()
@@ -224,9 +220,18 @@ void __setVariable(const std::string *varName, const RValue *value)
 void initRuntime(Program &program)
 {
 	Scope s;
-	RValue tmp{&ping};
-	std::string *name = program.duplicateString("ping");
-	s.setVariable(name, &tmp);
+
+#define export(funcName) \
+	{ \
+		std::string *name = program.duplicateString(#funcName); \
+		RValue tmp{&funcName}; \
+		s.setVariable(name, &tmp); \
+	} \
+
+	export(__ping);
+	export(print);
+#undef export
+
 	scopeStack.push_back(s);
 }
 

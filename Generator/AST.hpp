@@ -264,6 +264,7 @@ public:
 		m_functionExpr->print(indent + 1);
 		do_indent(indent);
 		std::cout << "Args:\n";
+		m_args->print(indent + 1);
 	}
 
 	Node * functionExpr() const { return m_functionExpr; }

@@ -25,24 +25,6 @@ public:
 		return result;
 	}
 
-	static RValue fromVariable(const Variable *var)
-	{
-		switch (var->type()) {
-			case ValueType::Boolean:
-				return RValue{std::get<bool>(var->value())};
-			case ValueType::Integer:
-				return RValue{std::get<int>(var->value())};
-			case ValueType::Real:
-				return RValue{std::get<double>(var->value())};
-			case ValueType::String:
-				return RValue{std::get<std::string>(var->value())};
-			case ValueType::Function:
-				return RValue{std::get<fn_ptr>(var->value())};
-		}
-
-		return RValue{};
-	}
-
 	template <typename T>
 	static RValue executeBinOp(const RValue &opLeft, const RValue &opRight, Lua::BinOp::Type op)
 	{
@@ -95,6 +77,7 @@ public:
 	RValue(std::string &&v) : m_type{Type::Immediate}, m_valueType{ValueType::String}, m_value{std::move(v)} {}
 	RValue(fn_ptr v) : m_type{Type::Immediate}, m_valueType{ValueType::Function}, m_value{v} {}
 	RValue(std::shared_ptr <Table> table) : m_type{Type::Immediate}, m_valueType{ValueType::Table}, m_value{table} {}
+	RValue(const Variable *var) : m_type{Type::Immediate}, m_valueType{var->type()}, m_value{var->value()} {}
 
 	~RValue() = default;
 
