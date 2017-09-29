@@ -6,6 +6,8 @@
 #include "Generator/AST.hpp"
 #include "Generator/Variable.hpp"
 
+class Table;
+
 class RValue {
 public:
 	enum class Type {
@@ -25,61 +27,61 @@ public:
 
 	static RValue fromVariable(const Variable *var)
 	{
-		switch (var->type) {
+		switch (var->type()) {
 			case ValueType::Boolean:
-				return RValue{std::get<bool>(var->value)};
+				return RValue{std::get<bool>(var->value())};
 			case ValueType::Integer:
-				return RValue{std::get<int>(var->value)};
+				return RValue{std::get<int>(var->value())};
 			case ValueType::Real:
-				return RValue{std::get<double>(var->value)};
+				return RValue{std::get<double>(var->value())};
 			case ValueType::String:
-				return RValue{std::get<std::string>(var->value)};
+				return RValue{std::get<std::string>(var->value())};
 			case ValueType::Function:
-				return RValue{std::get<fn_ptr>(var->value)};
+				return RValue{std::get<fn_ptr>(var->value())};
 		}
 
 		return RValue{};
 	}
 
 	template <typename T>
-	static RValue executeBinOp(const RValue &opLeft, const RValue &opRight, BinOp::Type op)
+	static RValue executeBinOp(const RValue &opLeft, const RValue &opRight, Lua::BinOp::Type op)
 	{
 		if constexpr(std::is_arithmetic<T>::value) {
 			switch (op) {
-				case BinOp::Type::Plus:
+				case Lua::BinOp::Type::Plus:
 					return RValue{opLeft.value<T>() + opRight.value<T>()};
-				case BinOp::Type::Minus:
+				case Lua::BinOp::Type::Minus:
 					return RValue{opLeft.value<T>() - opRight.value<T>()};
-				case BinOp::Type::Times:
+				case Lua::BinOp::Type::Times:
 					return RValue{opLeft.value<T>() * opRight.value<T>()};
-				case BinOp::Type::Divide:
+				case Lua::BinOp::Type::Divide:
 					return RValue{opLeft.value<T>() / opRight.value<T>()};
 			}
 		}
 
 		if constexpr(std::is_integral<T>::value) {
-			if (op == BinOp::Type::Modulo)
+			if (op == Lua::BinOp::Type::Modulo)
 				return RValue{opLeft.value<T>() % opRight.value<T>()};
 		}
 
-		std::cerr << "Unable to execute binary operation: " << BinOp::toString(op) << " for type " << typeid(T).name() << '\n';
+		std::cerr << "Unable to execute binary operation: " << Lua::BinOp::toString(op) << " for type " << typeid(T).name() << '\n';
 		abort();
 		return RValue{};
 	}
 
 	template <typename T>
-	static RValue executeUnOp(const RValue &operand, UnOp::Type op)
+	static RValue executeUnOp(const RValue &operand, Lua::UnOp::Type op)
 	{
 		if constexpr(std::is_arithmetic<T>::value) {
-			if (op == UnOp::Type::Negate)
+			if (op == Lua::UnOp::Type::Negate)
 				return RValue{-operand.value<T>()};
 
 		} else if constexpr(std::is_same<T, bool>::value) {
-			if (op == UnOp::Type::Not)
+			if (op == Lua::UnOp::Type::Not)
 				return RValue{!operand.value<T>()};
 		}
 
-		std::cerr << "Unary operation " << UnOp::toString(op) << " not possible for type " << typeid(T).name() << '\n';
+		std::cerr << "Unary operation " << Lua::UnOp::toString(op) << " not possible for type " << typeid(T).name() << '\n';
 		abort();
 		return RValue{};
 	}
@@ -111,6 +113,8 @@ public:
 
 	ValueType valueType() const { return m_valueType; }
 	void setValueType(ValueType vt) { m_valueType = vt; }
+
+	bool isNil() const { return m_valueType == ValueType::Nil; }
 
 	template <typename T>
 	const T & value() const { return std::get<T>(m_value); }

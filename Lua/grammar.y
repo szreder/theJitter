@@ -9,7 +9,7 @@ int yyerror(const char *s)
 	std::cerr << s << '\n';
 }
 
-Node *root;
+Lua::Node *root;
 
 int yydebug = 1;
 
@@ -18,15 +18,15 @@ int yydebug = 1;
 %define parse.error verbose
 
 %union {
-	Node *node;
-	ExprList *expr_list;
-	VarList *var_list;
-	FunctionCall *func_call;
-	double real_value;
 	int int_value;
 	char *str;
-	TableCtor *table;
-	Field *field;
+	double real_value;
+	Lua::Node *node;
+	Lua::ExprList *expr_list;
+	Lua::VarList *var_list;
+	Lua::FunctionCall *func_call;
+	Lua::TableCtor *table;
+	Lua::Field *field;
 }
 
 %type <node> chunk expr prefix_expr statement
@@ -63,7 +63,7 @@ chunk {
 
 chunk :
 statement {
-	$$ = new Chunk{};
+	$$ = new Lua::Chunk{};
 	$$->append($1);
 }
 | chunk statement {
@@ -74,7 +74,7 @@ statement {
 
 statement :
 var_list ASSIGN expr_list {
-	$$ = new Assignment{$1, $3};
+	$$ = new Lua::Assignment{$1, $3};
 }
 | func_call {
 	$$ = $1;
@@ -83,7 +83,7 @@ var_list ASSIGN expr_list {
 
 expr_list :
 expr {
-	$$ = new ExprList{};
+	$$ = new Lua::ExprList{};
 	$$->append($1);
 }
 | expr_list COMMA expr {
@@ -93,7 +93,7 @@ expr {
 
 var_list :
 var {
-	$$ = new VarList{};
+	$$ = new Lua::VarList{};
 	$$->append($1);
 }
 | var_list COMMA var {
@@ -116,7 +116,7 @@ ID {
 
 prefix_expr :
 var {
-	$$ = new VarNode{$1};
+	$$ = new Lua::VarNode{$1};
 	free($1);
 }
 | '(' expr ')' {
@@ -129,7 +129,7 @@ var {
 
 func_call :
 prefix_expr args {
-	$$ = new FunctionCall{$1};
+	$$ = new Lua::FunctionCall{$1};
 	$$->setArgs($2);
 }
 
@@ -138,45 +138,45 @@ args :
 	$$ = $2;
 }
 | '(' ')' {
-	$$ = new ExprList{};
+	$$ = new Lua::ExprList{};
 }
 
 expr :
 NIL {
-	$$ = new NilValue{};
+	$$ = new Lua::NilValue{};
 }
 | FALSE {
-	$$ = new BooleanValue{false};
+	$$ = new Lua::BooleanValue{false};
 }
 | TRUE {
-	$$ = new BooleanValue{true};
+	$$ = new Lua::BooleanValue{true};
 }
 | INT_VALUE {
-	$$ = new IntValue{$1};
+	$$ = new Lua::IntValue{$1};
 }
 | REAL_VALUE {
-	$$ = new RealValue{$1};
+	$$ = new Lua::RealValue{$1};
 }
 | STRING_VALUE {
-	$$ = new StringValue{$1};
+	$$ = new Lua::StringValue{$1};
 }
 | expr PLUS expr {
-	$$ = new BinOp{BinOp::Type::Plus, $1, $3};
+	$$ = new Lua::BinOp{Lua::BinOp::Type::Plus, $1, $3};
 }
 | expr MINUS expr {
-	$$ = new BinOp{BinOp::Type::Minus, $1, $3};
+	$$ = new Lua::BinOp{Lua::BinOp::Type::Minus, $1, $3};
 }
 | expr TIMES expr {
-	$$ = new BinOp{BinOp::Type::Times, $1, $3};
+	$$ = new Lua::BinOp{Lua::BinOp::Type::Times, $1, $3};
 }
 | expr DIV expr {
-	$$ = new BinOp{BinOp::Type::Divide, $1, $3};
+	$$ = new Lua::BinOp{Lua::BinOp::Type::Divide, $1, $3};
 }
 | expr MOD expr {
-	$$ = new BinOp{BinOp::Type::Modulo, $1, $3};
+	$$ = new Lua::BinOp{Lua::BinOp::Type::Modulo, $1, $3};
 }
 | MINUS expr %prec NEGATE {
-	$$ = new UnOp{UnOp::Type::Negate, $2};
+	$$ = new Lua::UnOp{Lua::UnOp::Type::Negate, $2};
 }
 | table_ctor {
 	std::cout << "table ctor\n";
@@ -190,7 +190,7 @@ NIL {
 table_ctor :
 '{' '}' {
 	std::cout << "empty table ctor\n";
-	$$ = new TableCtor{};
+	$$ = new Lua::TableCtor{};
 }
 | '{' field_list '}' {
 	std::cout << "field table ctor\n";
@@ -199,8 +199,8 @@ table_ctor :
 
 field_list :
 field {
-	std::cout << "new TableCtorValue\n";
-	$$ = new TableCtor{};
+	std::cout << "new Lua::TableCtorValue\n";
+	$$ = new Lua::TableCtor{};
 	$$->append($1);
 }
 | field_list COMMA field {
@@ -210,13 +210,13 @@ field {
 
 field :
 '[' expr ']' ASSIGN expr {
-	$$ = new Field{$2, $5};
+	$$ = new Lua::Field{$2, $5};
 }
 | ID ASSIGN expr {
-	$$ = new Field{$1, $3};
+	$$ = new Lua::Field{$1, $3};
 }
 | expr {
-	$$ = new Field{$1};
+	$$ = new Lua::Field{$1};
 }
 
 %%

@@ -10,6 +10,8 @@
 #include "Generator/ValueType.hpp"
 #include "Util/EnumHelpers.hpp"
 
+namespace Lua {
+
 class Node {
 public:
 	enum class Type {
@@ -335,14 +337,14 @@ public:
 		NoIndex,
 	};
 
-	constexpr Field(Node *expr, Node *val) : m_type{Type::Brackets}, m_indexExpr{expr}, m_valueExpr{val} {}
+	constexpr Field(Node *expr, Node *val) : m_type{Type::Brackets}, m_keyExpr{expr}, m_valueExpr{val} {}
 	Field(const std::string &s, Node *val) : m_type{Type::Literal}, m_fieldName{s}, m_valueExpr{val} {}
-	constexpr Field(Node *val) : m_type{Type::NoIndex}, m_indexExpr{nullptr}, m_valueExpr{val} {}
+	constexpr Field(Node *val) : m_type{Type::NoIndex}, m_keyExpr{nullptr}, m_valueExpr{val} {}
 
 	~Field()
 	{
 		if (m_type == Type::Brackets)
-			delete m_indexExpr;
+			delete m_keyExpr;
 		delete m_valueExpr;
 	}
 
@@ -352,7 +354,7 @@ public:
 		switch (m_type) {
 			case Type::Brackets:
 				std::cout << "Expr to expr:\n";
-				m_indexExpr->print(indent + 1);
+				m_keyExpr->print(indent + 1);
 				break;
 			case Type::Literal:
 				std::cout << "Name to expr:\n";
@@ -372,14 +374,14 @@ public:
 	Node::Type type() const override { return Node::Type::Field; }
 
 	const std::string & fieldName() const { return m_fieldName; }
-	const Node * indexExpr() const { return m_indexExpr; }
+	const Node * keyExpr() const { return m_keyExpr; }
 	const Node * valueExpr() const { return m_valueExpr; }
 
 private:
 	Type m_type;
 	union {
 		std::string m_fieldName;
-		Node *m_indexExpr;
+		Node *m_keyExpr;
 	};
 	Node *m_valueExpr;
 };
@@ -533,3 +535,5 @@ private:
 	Type m_type;
 	Node *m_operand;
 };
+
+} //namespace Lua

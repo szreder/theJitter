@@ -7,16 +7,22 @@
 #include <unordered_set>
 #include <variant>
 
-#include "Generator/Table.hpp"
-#include "Generator/ValueType.hpp"
+#include "Generator/Value.hpp"
 
-typedef void * (*fn_ptr)(void *);
-typedef std::variant <bool, int, double, std::string, void *, fn_ptr, std::shared_ptr <Table> > ValueVariant;
+class Variable {
+public:
+	const char *& name() { return m_name; }
+	const char * name() const { return m_name; }
 
-struct Variable {
-	ValueType type;
-	const char *name;
-	ValueVariant value;
+	ValueType & type() { return m_value.first; }
+	const ValueType & type() const { return m_value.first; }
+
+	ValueVariant & value() { return m_value.second; }
+	const ValueVariant & value() const { return m_value.second; }
+
+private:
+	const char *m_name;
+	Value m_value;
 };
 
 std::ostream & operator << (std::ostream &os, const Variable &v);
@@ -24,13 +30,13 @@ std::ostream & operator << (std::ostream &os, const Variable &v);
 struct VariableHasher {
 	size_t operator()(const Variable &v) const
 	{
-		return std::hash<std::string_view>{}(v.name);
+		return std::hash<std::string_view>{}(v.name());
 	}
 };
 
 struct VariableComparer {
 	bool operator()(const Variable &a, const Variable &b) const
 	{
-		return strcmp(a.name, b.name) == 0;
+		return strcmp(a.name(), b.name()) == 0;
 	}
 };

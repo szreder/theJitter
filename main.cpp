@@ -1,7 +1,7 @@
 #include "Generator/AST.hpp"
 #include "grammar.tab.h"
 
-extern Node *root;
+extern Lua::Node *root;
 
 #include "Generator/Generator.hpp"
 #include "Generator/Program.hpp"
@@ -12,7 +12,7 @@ int main()
 {
 	yyparse();
 	root->print();
-	generate(root);
+	Lua::generate(root);
 	auto result = Program::getInstance().compile();
 
 	void *fn_ptr = gcc_jit_result_get_code(result, "__main");

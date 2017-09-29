@@ -10,6 +10,8 @@
 #include "Util/Casts.hpp"
 #include "Util/PrettyPrint.hpp"
 
+namespace Lua {
+
 namespace {
 
 void runcall(Program &program, gcc_jit_function *func, gcc_jit_block *block, int call, void *arg)
@@ -239,6 +241,9 @@ GenResult generate<Node::Type::FunctionCall>(Program &program, gcc_jit_function 
 	const ExprList *args = f->args();
 	std::vector <GenResult> exprResults = generateExprList(program, func, block, args);
 
+	sprintf(buff, "__fn_args_v_%d", ++funcArgCnt);
+	gcc_jit_lvalue *argsTmp = gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+
 	for (auto i = exprResults.crbegin(); i != exprResults.crend(); ++i)
 		RUNCALL(RUNCALL_PUSH, program.allocRValue(i->value()));
 	RUNCALL(RUNCALL_PUSH, toVoidPtr(args->exprs().size()));
@@ -276,7 +281,7 @@ GenResult generate<Node::Type::TableCtor>(Program &program, gcc_jit_function *fu
 			RValue index;
 			switch (field->fieldType()) {
 				case Field::Type::Brackets:
-					index = *dispatch(program, func, block, field->indexExpr());
+					index = *dispatch(program, func, block, field->keyExpr());
 					break;
 				case Field::Type::Literal:
 					index = RValue{field->fieldName()};
@@ -366,3 +371,5 @@ void generate(const Node *root)
 	Program &program = Program::getInstance();
 	dispatch(program, program.main(), nullptr, root);
 }
+
+} //namespace Lua

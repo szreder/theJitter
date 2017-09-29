@@ -8,6 +8,7 @@
 #include "Generator/RValue.hpp"
 #include "Generator/Runtime.hpp"
 #include "Generator/Scope.hpp"
+#include "Generator/Table.hpp"
 #include "Util/Casts.hpp"
 
 namespace {
@@ -64,9 +65,9 @@ RValue resolveRValue(const RValue *src)
 	return RValue{};
 }
 
-void executeBinOp(BinOp::Type op)
+void executeBinOp(Lua::BinOp::Type op)
 {
-	std::cout << "Execute BinOp " << BinOp::toString(op) << '\n';
+	std::cout << "Execute BinOp " << Lua::BinOp::toString(op) << '\n';
 	const RValue *left = popData<const RValue *>();
 	const RValue *right = popData<const RValue *>();
 	const std::string *varName = popData<const std::string *>();
@@ -90,14 +91,14 @@ void executeBinOp(BinOp::Type op)
 			result = RValue::executeBinOp<std::string>(opLeft, opRight, op);
 			break;
 		default:
-			std::cerr << "Binary operation " << BinOp::toString(op) << " not possible for type " << prettyPrint(opLeft.valueType()) << '\n';
+			std::cerr << "Binary operation " << Lua::BinOp::toString(op) << " not possible for type " << prettyPrint(opLeft.valueType()) << '\n';
 			abort();
 	}
 
 	__setVariable(varName, &result);
 }
 
-void executeUnOp(UnOp::Type op)
+void executeUnOp(Lua::UnOp::Type op)
 {
 	const RValue *operand = popData<const RValue *>();
 	const std::string *varName = popData<const std::string *>();
@@ -114,7 +115,7 @@ void executeUnOp(UnOp::Type op)
 			result = RValue::executeUnOp<double>(result, op);
 			break;
 		default:
-			std::cerr << "Unary operation " << UnOp::toString(op) << " not possible for type " << prettyPrint(result.valueType()) << '\n';
+			std::cerr << "Unary operation " << Lua::UnOp::toString(op) << " not possible for type " << prettyPrint(result.valueType()) << '\n';
 			break;
 	}
 
@@ -152,8 +153,9 @@ void constructTable()
 
 	while (fieldCnt != 0) {
 		--fieldCnt;
-		const RValue *indexExpr = popData<const RValue *>();
-		const RValue *valueExpr = popData<const RValue *>();
+		RValue key = resolveRValue(popData<const RValue *>());
+		RValue value = resolveRValue(popData<const RValue *>());
+		table->setValue(key, value);
 	}
 
 	const std::string *varName = popData<const std::string *>();
@@ -252,10 +254,10 @@ void runcall(RuncallNum call, void *arg)
 			setVariable();
 			break;
 		case RUNCALL_BINOP:
-			executeBinOp(fromVoidPtr<BinOp::Type>(arg));
+			executeBinOp(fromVoidPtr<Lua::BinOp::Type>(arg));
 			break;
 		case RUNCALL_UNOP:
-			executeUnOp(fromVoidPtr<UnOp::Type>(arg));
+			executeUnOp(fromVoidPtr<Lua::UnOp::Type>(arg));
 			break;
 		case RUNCALL_FUNCTION_CALL:
 			executeFunctionCall();

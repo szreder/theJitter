@@ -1,7 +1,7 @@
 .PHONY : clean distclean
 
 BIN = theJitter
-OBJS = grammar.tab.o lex.yy.o main.o Generator/Builtins.o Generator/Generator.o Generator/Program.o Generator/Runtime.o Generator/RValue.o Generator/Table.o Generator/Variable.o Util/PrettyPrint.o
+OBJS = grammar.tab.o lex.yy.o main.o Generator/Builtins.o Generator/Generator.o Generator/Program.o Generator/Runtime.o Generator/RValue.o Generator/Scope.o Generator/Table.o Generator/Variable.o Util/PrettyPrint.o
 CXXFLAGS = -std=c++17 -I . -ggdb
 CFLAGS = $(CXXFLAGS)
 CC = $(CXX)

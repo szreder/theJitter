@@ -10,49 +10,11 @@
 
 class Scope {
 public:
-	const Variable * getVariable(const std::string *varName)
-	{
-		Variable tmp;
-		tmp.name = varName->data();
-		auto var = m_vars.find(tmp);
-		if (var != m_vars.end())
-			return &(*var);
-		return nullptr;
-	}
-
-	void setVariable(const std::string *varName, const RValue *value)
-	{
-		Variable tmp;
-		tmp.name = varName->data();
-		tmp.type = value->valueType();
-		tmp.value = value->value();
-
-		m_vars.erase(tmp);
-		m_vars.insert(tmp);
-	}
-
-	void setVariable(const std::string *varName, const Variable *value)
-	{
-		std::cerr << "Scope, set variable = " << *varName << " to: " << *value << '\n';
-		Variable tmp;
-		tmp.name = varName->data();
-		tmp.type = value->type;
-		tmp.value = value->value;
-		m_vars.erase(tmp);
-		m_vars.insert(tmp);
-	}
-
-	bool removeVariable(const std::string *varName)
-	{
-		Variable tmp;
-		tmp.name = varName->data();
-		return m_vars.erase(tmp) != 0;
-	}
-
-	bool removeVariable(const Variable *var)
-	{
-		return m_vars.erase(*var);
-	}
+	const Variable * getVariable(const std::string *varName);
+	void setVariable(const std::string *varName, const RValue *value);
+	void setVariable(const std::string *varName, const Variable *value);
+	bool removeVariable(const std::string *varName);
+	bool removeVariable(const Variable *var);
 
 private:
 	std::unordered_set <Variable, VariableHasher, VariableComparer> m_vars;
