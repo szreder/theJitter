@@ -16,6 +16,8 @@ namespace {
 std::vector <Scope> scopeStack;
 std::vector <void *> dataStack;
 
+template <typename T>
+void __doSetVariable(const std::string *varName, T &&value);
 void __setVariable(const std::string *varName, const RValue *value);
 
 template <typename T>
@@ -137,7 +139,10 @@ void executeFunctionCall()
 	}
 
 	auto func = resolvedSymbol.value<fn_ptr>();
-	func(&args);
+	RValue result;
+	func(&args, &result);
+	const std::string *resultVarName = popData<const std::string *>();
+	__doSetVariable(resultVarName, &result);
 }
 
 void constructTable()

@@ -6,5 +6,5 @@ class RValue;
 
 typedef std::vector <RValue> __arg_vec;
 
-void * __ping(void *);
-void * print(void *);
+void __ping(void *, void *);
+void print(void *, void *);

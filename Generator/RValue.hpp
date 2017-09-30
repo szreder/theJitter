@@ -7,6 +7,7 @@
 #include "Generator/Variable.hpp"
 
 class Table;
+class Variable;
 
 class RValue {
 public:
@@ -27,18 +28,8 @@ public:
 
 	static RValue fromLValue(const Lua::LValue *lval)
 	{
-		RValue result;
-		result.m_type = Type::Variable;
-		result.m_valueType = ValueType::Unknown;
-
-		if (lval->lvalueType() == Lua::LValue::Type::Name) {
-			result.m_value = lval->name();
-			return result;
-		}
-
-		std::cerr << "Not implemented yet\n";
-		abort();
-		return RValue{};
+		assert(lval->lvalueType() == Lua::LValue::Type::Name);
+		return asVariable(lval->name());
 	}
 
 	template <typename T>

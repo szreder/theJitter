@@ -237,7 +237,7 @@ GenResult generate<Node::Type::Chunk>(Program &program, gcc_jit_function *func, 
 template <>
 GenResult generate<Node::Type::FunctionCall>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
-	static int funcArgCnt = 0;
+	static int funcResCnt = 0;
 	char buff[30];
 
 	const FunctionCall *f = static_cast<const FunctionCall *>(src);
@@ -251,17 +251,17 @@ GenResult generate<Node::Type::FunctionCall>(Program &program, gcc_jit_function 
 	const ExprList *args = f->args();
 	std::vector <GenResult> exprResults = generateExprList(program, func, block, args);
 
-	sprintf(buff, "__fn_args_v_%d", ++funcArgCnt);
+	sprintf(buff, "__fn_res_v_%d", ++funcResCnt);
 	gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
 
+	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
 	for (auto i = exprResults.crbegin(); i != exprResults.crend(); ++i)
 		RUNCALL(RUNCALL_PUSH, program.allocRValue(i->value()));
 	RUNCALL(RUNCALL_PUSH, toVoidPtr(args->exprs().size()));
 	RUNCALL(RUNCALL_PUSH, program.allocRValue(*funcResolved));
 	RUNCALL(RUNCALL_FUNCTION_CALL, nullptr);
 
-	//TODO result of function call
-	return {};
+	return RValue::asVariable(std::string{buff});
 }
 
 template <>
@@ -339,7 +339,10 @@ template <>
 GenResult generate<Node::Type::LValue>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
 	const LValue *lval = static_cast<const LValue *>(src);
-	return RValue::fromLValue(lval);
+	if (lval->lvalueType() == Lua::LValue::Type::Name)
+		return RValue::fromLValue(lval);
+
+	return {};
 }
 
 GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)

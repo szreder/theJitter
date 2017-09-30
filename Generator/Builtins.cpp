@@ -3,20 +3,31 @@
 #include "Generator/Builtins.hpp"
 #include "Util/PrettyPrint.hpp"
 
-inline const __arg_vec * getArgs(void *p)
+inline const __arg_vec * args_cast(void *p)
 {
 	return reinterpret_cast<const __arg_vec *>(p);
 }
 
-void * __ping(void *)
+inline RValue * result_cast(void *p)
 {
-	std::cout << "pong\n";
-	return nullptr;
+	return reinterpret_cast<RValue *>(p);
 }
 
-void * print(void *__args)
+void __ping(void *__args, void *__result)
 {
-	auto args = getArgs(__args);
+	auto args = args_cast(__args);
+	auto result = result_cast(__result);
+	std::cout << "pong\n";
+	if (args->empty())
+		*result = RValue::Nil();
+	else
+		*result = (*args)[0];
+}
+
+void print(void *__args, void *__result)
+{
+	auto args = args_cast(__args);
+	auto result = result_cast(__result);
 
 	auto doPrint = [](const RValue &val) {
 		switch (val.valueType()) {
@@ -47,8 +58,7 @@ void * print(void *__args)
 		std::cout << ", ";
 		doPrint((*args)[i]);
 	}
-
 	std::cout << '\n';
 
-	return nullptr;
+	*result = RValue::Nil();
 }
