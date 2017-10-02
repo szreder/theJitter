@@ -131,8 +131,8 @@ void executeFunctionCall()
 
 void resolveName()
 {
-	RValue *dst = popData<RValue *>();
 	const std::string *varName = popData<const std::string *>();
+	RValue *dst = popData<RValue *>();
 
 	Variable *var = __findScope(varName).second;
 	if (var == nullptr) {
@@ -161,23 +161,19 @@ void constructTable()
 	result->setValueType(ValueType::Table);
 }
 
-/*
 void accessTable()
 {
-	RValue tableValue = resolveRValue(popData<const RValue *>());
-	RValue keyValue = resolveRValue(popData<const RValue *>());
+	const RValue *tableValue = popData<RValue *>();
+	const RValue *keyValue = popData<RValue *>();
 
-	if (tableValue.valueType() != ValueType::Table) {
+	if (tableValue->valueType() != ValueType::Table) {
 		std::cerr << "Attempted to index non-table type\n";
 		abort();
 	}
 
-	RValue result{tableValue.value<std::shared_ptr <Table> >()->value(keyValue)};
-
-	const std::string *varName = popData<const std::string *>();
-	__doSetVariable(varName, &result);
+	RValue *result = popData<RValue *>();
+	result->setValue(tableValue->value<std::shared_ptr <Table> >()->value(*keyValue));
 }
-*/
 
 } //namespace
 
@@ -232,9 +228,8 @@ void runcall(RuncallNum call, void *arg)
 		case RUNCALL_TABLE_CTOR:
 			constructTable();
 			break;
-
 		case RUNCALL_TABLE_ACCESS:
-// 			accessTable();
+			accessTable();
 			break;
 		default:
 			std::cout << "Runcall " << call << " not supported\n";

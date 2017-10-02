@@ -167,17 +167,30 @@ template <>
 RValue * generate<Node::Type::LValue>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
 	const LValue *lval = static_cast<const LValue *>(src);
+	RValue *result = program.allocRValue();
+	RUNCALL(RUNCALL_PUSH, result);
 
-	if (lval->lvalueType() == LValue::Type::Name) {
-		RValue *result = program.allocRValue();
-		RUNCALL(RUNCALL_PUSH, program.duplicateString(lval->name()));
-		RUNCALL(RUNCALL_PUSH, result);
-		RUNCALL(RUNCALL_RESOLVE_NAME, nullptr);
-		result->setType(RValue::Type::LValue);
-		return result;
+	switch (lval->lvalueType()) {
+		case LValue::Type::Bracket:
+		case LValue::Type::Dot: {
+			if (lval->lvalueType() == LValue::Type::Dot)
+				RUNCALL(RUNCALL_PUSH, program.allocRValue(lval->name()));
+			else
+				RUNCALL(RUNCALL_PUSH, dispatch(program, func, block, lval->keyExpr()));
+			RUNCALL(RUNCALL_PUSH, dispatch(program, func, block, lval->tableExpr()));
+			RUNCALL(RUNCALL_TABLE_ACCESS, nullptr);
+			break;
+		}
+
+		case LValue::Type::Name: {
+			RUNCALL(RUNCALL_PUSH, program.duplicateString(lval->name()));
+			RUNCALL(RUNCALL_RESOLVE_NAME, nullptr);
+			break;
+		}
 	}
 
-	return nullptr;
+	result->setType(RValue::Type::LValue);
+	return result;
 }
 
 template <>
