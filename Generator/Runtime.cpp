@@ -59,7 +59,7 @@ RValue resolveRValue(const RValue *src)
 			}
 			return RValue{var};
 		} default:
-			std::cerr << "Cannot resolve RValue of type = " << toUnderlying(src->type()) << '\n';
+			std::cerr << "Cannot resolve RValue of type = " << prettyPrint(src->type()) << '\n';
 			abort();
 	}
 
@@ -101,7 +101,7 @@ void executeBinOp(Lua::BinOp::Type op)
 
 void executeUnOp(Lua::UnOp::Type op)
 {
-	const RValue *operand = popData<const RValue *>();
+	RValue *operand = popData<RValue *>();
 	const std::string *varName = popData<const std::string *>();
 
 	RValue result = resolveRValue(operand);
@@ -162,6 +162,22 @@ void constructTable()
 
 	RValue result{table};
 	__setVariable(varName, &result);
+}
+
+void accessTable()
+{
+	RValue tableValue = resolveRValue(popData<const RValue *>());
+	RValue keyValue = resolveRValue(popData<const RValue *>());
+
+	if (tableValue.valueType() != ValueType::Table) {
+		std::cerr << "Attempted to index non-table type\n";
+		abort();
+	}
+
+	RValue result{tableValue.value<std::shared_ptr <Table> >()->value(keyValue)};
+
+	const std::string *varName = popData<const std::string *>();
+	__doSetVariable(varName, &result);
 }
 
 void unsetVariable()
@@ -273,6 +289,9 @@ void runcall(RuncallNum call, void *arg)
 			break;
 		case RUNCALL_TABLE_CTOR:
 			constructTable();
+			break;
+		case RUNCALL_TABLE_ACCESS:
+			accessTable();
 			break;
 		default:
 			std::cout << "Runcall " << call << " not supported\n";

@@ -156,7 +156,8 @@ GenResult generate<Node::Type::Assignment>(Program &program, gcc_jit_function *f
 				}
 				++i;
 				break;
-			case LValue::Type::Expression:
+			case LValue::Type::Bracket:
+			case LValue::Type::Dot:
 				std::cerr << "Not implemented yet\n";
 				abort();
 				break;
@@ -339,10 +340,22 @@ template <>
 GenResult generate<Node::Type::LValue>(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)
 {
 	const LValue *lval = static_cast<const LValue *>(src);
+
 	if (lval->lvalueType() == Lua::LValue::Type::Name)
 		return RValue::fromLValue(lval);
 
-	return {};
+	static int lvalueCnt = 0;
+	char buff[30];
+
+	sprintf(buff, "__lvalue_v_%d", ++lvalueCnt);
+	gcc_jit_function_new_local(func, nullptr, program.type(ValueType::Unknown), buff);
+	RUNCALL(RUNCALL_PUSH, program.duplicateString(buff));
+
+	RUNCALL(RUNCALL_PUSH, program.allocRValue(*dispatch(program, func, block, lval->keyExpr())));
+	RUNCALL(RUNCALL_PUSH, program.allocRValue(*dispatch(program, func, block, lval->tableExpr())));
+	RUNCALL(RUNCALL_TABLE_ACCESS, nullptr);
+
+	return RValue::asVariable(std::string{buff});
 }
 
 GenResult dispatch(Program &program, gcc_jit_function *func, gcc_jit_block *block, const Node *src)

@@ -108,10 +108,10 @@ ID {
 	$$ = new Lua::LValue{$1};
 	free($1);
 }
-| prefix_expr "[" expr "]" {
+| prefix_expr '[' expr ']' {
 	$$ = new Lua::LValue{$1, $3};
 }
-| prefix_expr "." ID {
+| prefix_expr '.' ID {
 	$$ = new Lua::LValue{$1, new Lua::LValue{$3}};
 }
 

@@ -87,6 +87,7 @@ public:
 	RValue(fn_ptr v) : m_type{Type::Immediate}, m_valueType{ValueType::Function}, m_value{v} {}
 	RValue(std::shared_ptr <Table> table) : m_type{Type::Immediate}, m_valueType{ValueType::Table}, m_value{table} {}
 	RValue(const Variable *var) : m_type{Type::Immediate}, m_valueType{var->type()}, m_value{var->value()} {}
+	RValue(const Value &v) : m_type{Type::Immediate}, m_valueType{v.first}, m_value{v.second} {}
 
 	~RValue() = default;
 
@@ -111,7 +112,7 @@ public:
 	template <typename T>
 	const T & value() const { return std::get<T>(m_value); }
 
-	const ValueVariant value() const { return m_value; }
+	const ValueVariant & value() const { return m_value; }
 
 	template <typename T>
 	void setValue(const T &v) { m_value = v; }

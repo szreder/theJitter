@@ -52,10 +52,11 @@ const std::string & prettyPrint(ValueType vt)
 
 		result[toUnderlying(ValueType::Invalid)] = "invalid";
 		result[toUnderlying(ValueType::Unknown)] = "unknown";
-		result[toUnderlying(ValueType::Boolean)] = "boolean";
 		result[toUnderlying(ValueType::Nil)] = "nil";
+		result[toUnderlying(ValueType::Boolean)] = "boolean";
 		result[toUnderlying(ValueType::Integer)] = "integer";
 		result[toUnderlying(ValueType::Real)] = "real";
+		result[toUnderlying(ValueType::String)] = "string";
 		result[toUnderlying(ValueType::Function)] = "function";
 		result[toUnderlying(ValueType::Table)] = "table";
 

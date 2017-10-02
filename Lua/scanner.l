@@ -33,7 +33,8 @@ false {
 }
 
 \"[^\"]*\"|\'[^\']*\' {
-	yylval.str = yytext;
+	yylval.str = yytext + 1;
+	yylval.str[strlen(yylval.str) - 1] = '\0';
 	return STRING_VALUE;
 }
 

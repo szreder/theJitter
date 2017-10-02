@@ -20,6 +20,8 @@ public:
 	ValueVariant & value() { return m_value.second; }
 	const ValueVariant & value() const { return m_value.second; }
 
+	Value * asLValue() { return &m_value; }
+
 private:
 	const char *m_name;
 	Value m_value;

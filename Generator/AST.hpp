@@ -126,47 +126,57 @@ private:
 class LValue : public Node {
 public:
 	enum class Type {
-		Expression,
+		Bracket,
+		Dot,
 		Name,
 	};
 
-	LValue(const char *varName) : m_type{Type::Name}, m_variableName{varName} {}
-	LValue(Node *expr, Node *next) : m_type{Type::Expression}, m_expr{expr}, m_next{next} {}
+	LValue(Node *tableExpr, Node *keyExpr) : m_type{Type::Bracket}, m_tableExpr{tableExpr}, m_keyExpr{keyExpr} {}
+	LValue(Node *tableExpr, const char *fieldName) : m_type{Type::Dot}, m_tableExpr{tableExpr}, m_name{fieldName} {}
+	LValue(const char *varName) : m_type{Type::Name}, m_name{varName} {}
 	~LValue()
 	{
-		if (m_type == Type::Expression) {
-			delete m_expr;
-			delete m_next;
-		}
+		if (m_type != Type::Name)
+			delete m_tableExpr;
+		if (m_type == Type::Bracket)
+			delete m_keyExpr;
 	}
 
 	void print(int indent) const override
 	{
 		do_indent(indent);
-		if (m_type == Type::Expression) {
-			std::cout << "LValue:\n";
-			m_expr->print(indent + 1);
-			m_next->print(indent + 1);
-		} else {
-			std::cout << "Variable name: " << m_variableName << '\n';
+		std::cout << "LValue";
+		switch (m_type) {
+			case Type::Bracket:
+				std::cout << " bracket operator:\n";
+				m_tableExpr->print(indent + 1);
+				m_keyExpr->print(indent + 1);
+				break;
+			case Type::Dot:
+				std::cout << " dot operator:\n";
+				m_tableExpr->print(indent + 1);
+				do_indent(indent + 1);
+				std::cout << "Field name: " << m_name << '\n';
+				break;
+			case Type::Name:
+				std::cout << '\n';
+				do_indent(indent + 1);
+				std::cout << m_name << '\n';
+				break;
 		}
 	}
 
-	const std::string & name() const { return m_variableName; }
-	const Node * expr() const { return m_expr; }
-	const Node * next() const { return m_next; }
+	const std::string & name() const { return m_name; }
+	const Node * tableExpr() const { return m_tableExpr; }
+	const Node * keyExpr() const { return m_keyExpr; }
 
 	Type lvalueType() const { return m_type; }
 	Node::Type type() const override { return Node::Type::LValue; }
 private:
 	Type m_type;
-	union {
-		std::string m_variableName;
-		struct {
-			Node *m_expr;
-			Node *m_next;
-		};
-	};
+	Node *m_tableExpr;
+	Node *m_keyExpr;
+	std::string m_name;
 };
 
 class VarList : public Node {
