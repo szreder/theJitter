@@ -112,7 +112,7 @@ ID {
 	$$ = new Lua::LValue{$1, $3};
 }
 | prefix_expr '.' ID {
-	$$ = new Lua::LValue{$1, new Lua::LValue{$3}};
+	$$ = new Lua::LValue{$1, $3};
 }
 
 prefix_expr :
