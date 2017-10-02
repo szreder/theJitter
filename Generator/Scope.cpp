@@ -1,17 +1,15 @@
 #include <cstring>
 #include <string_view>
-#include <unordered_set>
 
 #include "Generator/Scope.hpp"
 #include "Generator/Variable.hpp"
+#include "Util/PrettyPrint.hpp"
 
-const Variable * Scope::getVariable(const std::string *varName)
+Variable * Scope::getVariable(const std::string *varName)
 {
-	Variable tmp;
-	tmp.name() = varName->data();
-	auto var = m_vars.find(tmp);
+	auto var = m_vars.find(*varName);
 	if (var != m_vars.end())
-		return &(*var);
+		return &var->second;
 	return nullptr;
 }
 
@@ -22,29 +20,26 @@ void Scope::setVariable(const std::string *varName, const RValue *value)
 	tmp.type() = value->valueType();
 	tmp.value() = value->value();
 
-	m_vars.erase(tmp);
-	m_vars.insert(tmp);
+	m_vars.insert_or_assign(*varName, tmp);
 }
 
 void Scope::setVariable(const std::string *varName, const Variable *value)
 {
-	std::cerr << "Scope, set variable = " << *varName << " to: " << *value << '\n';
 	Variable tmp;
 	tmp.name() = varName->data();
 	tmp.type() = value->type();
 	tmp.value() = value->value();
-	m_vars.erase(tmp);
-	m_vars.insert(tmp);
+
+	m_vars.insert_or_assign(*varName, tmp);
 }
 
 bool Scope::removeVariable(const std::string *varName)
 {
-	Variable tmp;
-	tmp.name() = varName->data();
-	return m_vars.erase(tmp) != 0;
+	return m_vars.erase(*varName) != 0;
 }
+
 
 bool Scope::removeVariable(const Variable *var)
 {
-	return m_vars.erase(*var);
+	return m_vars.erase(std::string{var->name()});
 }

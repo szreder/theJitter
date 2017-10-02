@@ -36,7 +36,8 @@ const std::string & prettyPrint(RValue::Type t)
 		StringArray result;
 
 		result[toUnderlying(RValue::Type::Immediate)] = "immediate";
-		result[toUnderlying(RValue::Type::Variable)] = "variable";
+		result[toUnderlying(RValue::Type::LValue)] = "L-value";
+		result[toUnderlying(RValue::Type::Temporary)] = "temporary";
 
 		return result;
 	}();

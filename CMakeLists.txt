@@ -21,6 +21,8 @@ set (SRC_FILES
 	Generator/RValue.cpp
 	Generator/Scope.cpp
 	Generator/Table.cpp
+	Generator/Value.cpp
+	Generator/ValueVariant.cpp
 	Generator/Variable.cpp
 
 	Util/PrettyPrint.cpp

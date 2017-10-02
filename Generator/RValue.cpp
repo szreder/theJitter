@@ -23,17 +23,6 @@ void matchTypes(RValue &leftRValue, RValue &rightRValue)
 
 std::ostream & operator << (std::ostream &os, const RValue &rv)
 {
-	os << "RValue(" << prettyPrint(rv.type()) << ") : ";
-	switch (rv.type()) {
-		case RValue::Type::Immediate:
-			os << " value type = " << prettyPrint(rv.valueType());
-			break;
-		case RValue::Type::Variable:
-			os << " name = " << rv.value<std::string>();
-			break;
-		default:
-			break;
-	}
-
+	os << "RValue(" << rv.value() << ')';
 	return os;
 }

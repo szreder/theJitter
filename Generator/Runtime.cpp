@@ -10,15 +10,12 @@
 #include "Generator/Scope.hpp"
 #include "Generator/Table.hpp"
 #include "Util/Casts.hpp"
+#include "Util/PrettyPrint.hpp"
 
 namespace {
 
 std::vector <Scope> scopeStack;
 std::vector <void *> dataStack;
-
-template <typename T>
-void __doSetVariable(const std::string *varName, T &&value);
-void __setVariable(const std::string *varName, const RValue *value);
 
 template <typename T>
 T popData()
@@ -32,7 +29,7 @@ T popData()
 		return static_cast<T>(p);
 }
 
-std::pair <Scope *, const Variable *> __findScope(const std::string *varName)
+std::pair <Scope *, Variable *> __findScope(const std::string *varName)
 {
 	for (size_t i = scopeStack.size(); i > 0; --i) {
 		Scope *scope = &scopeStack[i - 1];
@@ -44,105 +41,106 @@ std::pair <Scope *, const Variable *> __findScope(const std::string *varName)
 	return {nullptr, nullptr};
 }
 
-RValue resolveRValue(const RValue *src)
+void initVariable()
 {
-	if (src->type() == RValue::Type::Immediate)
-		return *src;
-
-	switch (src->type()) {
-		case RValue::Type::Variable: {
-			const auto &varName = src->value<std::string>();
-			const Variable *var = __findScope(&varName).second;
-			if (!var) {
-				std::cerr << "Cannot resolve variable: " << varName << '\n';
-				abort();
-			}
-			return RValue{var};
-		} default:
-			std::cerr << "Cannot resolve RValue of type = " << prettyPrint(src->type()) << '\n';
-			abort();
-	}
-
-	return RValue{};
+	const std::string *varName = popData<std::string *>();
+	scopeStack.back().setVariable(varName, &RValue::Nil());
 }
 
-void executeBinOp(Lua::BinOp::Type op)
+void executeAssign()
 {
-	std::cout << "Execute BinOp " << Lua::BinOp::toString(op) << '\n';
-	const RValue *left = popData<const RValue *>();
-	const RValue *right = popData<const RValue *>();
-	const std::string *varName = popData<const std::string *>();
+	RValue *dst = popData<RValue *>();
+	const RValue *src = popData<RValue *>();
 
-	RValue opLeft = resolveRValue(left);
-	RValue opRight = resolveRValue(right);
-	matchTypes(opLeft, opRight);
+#ifndef NDEBUG
+	std::cout << "Assign value: " << *src << '\n';
+#endif
 
-	RValue result;
-	switch (opLeft.valueType()) {
-		case ValueType::Boolean:
-			result = RValue::executeBinOp<bool>(opLeft, opRight, op);
-			break;
-		case ValueType::Integer:
-			result = RValue::executeBinOp<int>(opLeft, opRight, op);
-			break;
-		case ValueType::Real:
-			result = RValue::executeBinOp<double>(opLeft, opRight, op);
-			break;
-		case ValueType::String:
-			result = RValue::executeBinOp<std::string>(opLeft, opRight, op);
-			break;
-		default:
-			std::cerr << "Binary operation " << Lua::BinOp::toString(op) << " not possible for type " << prettyPrint(opLeft.valueType()) << '\n';
-			abort();
-	}
-
-	__setVariable(varName, &result);
+	assert(dst->type() == RValue::Type::LValue);
+	*dst->lvalue() = src->value();
 }
 
 void executeUnOp(Lua::UnOp::Type op)
 {
-	RValue *operand = popData<RValue *>();
-	const std::string *varName = popData<const std::string *>();
+	RValue *dst = popData<RValue *>();
+	const RValue *src = popData<RValue *>();
+	dst->setValue(src->value());
 
-	RValue result = resolveRValue(operand);
-	switch (result.valueType()) {
+	switch (dst->valueType()) {
 		case ValueType::Boolean:
-			result = RValue::executeUnOp<bool>(result, op);
+			dst->executeUnOp<bool>(op);
 			break;
 		case ValueType::Integer:
-			result = RValue::executeUnOp<int>(result, op);
+			dst->executeUnOp<int>(op);
 			break;
 		case ValueType::Real:
-			result = RValue::executeUnOp<double>(result, op);
+			dst->executeUnOp<double>(op);
 			break;
 		default:
-			std::cerr << "Unary operation " << Lua::UnOp::toString(op) << " not possible for type " << prettyPrint(result.valueType()) << '\n';
+			std::cerr << "Unary operation " << Lua::UnOp::toString(op) << " not possible for type " << prettyPrint(dst->valueType()) << '\n';
 			break;
 	}
+}
 
-	__setVariable(varName, &result);
+void executeBinOp(Lua::BinOp::Type op)
+{
+	RValue *dst = popData<RValue *>();
+	RValue *left = popData<RValue *>();
+	RValue *right = popData<RValue *>();
+
+	matchTypes(*left, *right);
+	dst->setValue(left->value());
+
+	switch (left->valueType()) {
+		case ValueType::Boolean:
+			dst->executeBinOp<bool>(*right, op);
+			break;
+		case ValueType::Integer:
+			dst->executeBinOp<int>(*right, op);
+			break;
+		case ValueType::Real:
+			dst->executeBinOp<double>(*right, op);
+			break;
+		case ValueType::String:
+			dst->executeBinOp<std::string>(*right, op);
+			break;
+		default:
+			std::cerr << "Binary operation " << Lua::BinOp::toString(op) << " not possible for type " << prettyPrint(left->valueType()) << '\n';
+			abort();
+	}
 }
 
 void executeFunctionCall()
 {
-	const RValue *rval_fn = popData<const RValue *>();
-	RValue resolvedSymbol = resolveRValue(rval_fn);
+	const RValue *rval_fn = popData<RValue *>();
 
 	size_t argCnt = popData<size_t>();
 	__arg_vec args(argCnt);
 	for (size_t i = 0; i != argCnt; ++i)
-		args[i] = resolveRValue(popData<const RValue *>());
+		args[i] = popData<RValue *>();
 
-	if (resolvedSymbol.valueType() != ValueType::Function) {
-		std::cerr << "Attempted to call " << resolvedSymbol << '\n';
+	if (rval_fn->valueType() != ValueType::Function) {
+		std::cerr << "Attempted to call value of type " << prettyPrint(rval_fn->valueType()) << '\n';
 		abort();
 	}
 
-	auto func = resolvedSymbol.value<fn_ptr>();
-	RValue result;
-	func(&args, &result);
-	const std::string *resultVarName = popData<const std::string *>();
-	__doSetVariable(resultVarName, &result);
+	RValue *result = popData<RValue *>();
+	auto func = rval_fn->value<fn_ptr>();
+	func(&args, result);
+}
+
+void resolveName()
+{
+	RValue *dst = popData<RValue *>();
+	const std::string *varName = popData<const std::string *>();
+
+	Variable *var = __findScope(varName).second;
+	if (var == nullptr) {
+		std::cerr << "Unable to resolve variable: " << *varName << '\n';
+		abort();
+	}
+
+	dst->setLValue(var->asLValue());
 }
 
 void constructTable()
@@ -153,17 +151,17 @@ void constructTable()
 
 	while (fieldCnt != 0) {
 		--fieldCnt;
-		RValue key = resolveRValue(popData<const RValue *>());
-		RValue value = resolveRValue(popData<const RValue *>());
-		table->setValue(key, value);
+		RValue *key = popData<RValue *>();
+		RValue *value = popData<RValue *>();
+		table->setValue(*key, *value);
 	}
 
-	const std::string *varName = popData<const std::string *>();
-
-	RValue result{table};
-	__setVariable(varName, &result);
+	RValue *result = popData<RValue *>();
+	result->setValue(table);
+	result->setValueType(ValueType::Table);
 }
 
+/*
 void accessTable()
 {
 	RValue tableValue = resolveRValue(popData<const RValue *>());
@@ -179,61 +177,7 @@ void accessTable()
 	const std::string *varName = popData<const std::string *>();
 	__doSetVariable(varName, &result);
 }
-
-void unsetVariable()
-{
-	const std::string *varName = popData<const std::string *>();
-	auto [scope, var] = __findScope(varName);
-
-	if (scope)
-		scope->removeVariable(var);
-}
-
-void setVariable()
-{
-	const RValue *value = popData<const RValue *>();
-	const std::string *varName = popData<const std::string *>();
-	__setVariable(varName, value);
-}
-
-template <typename T>
-void __doSetVariable(const std::string *varName, T &&value)
-{
-	Scope *scope = __findScope(varName).first;
-	if (scope)
-		scope->setVariable(varName, std::forward<T>(value));
-	else
-		scopeStack.back().setVariable(varName, std::forward<T>(value));
-}
-
-void __setVariable(const std::string *varName, const RValue *value)
-{
-	std::cout << "setVariable " << *varName << '\n';
-
-	switch (value->type()) {
-		case RValue::Type::Immediate: {
-			__doSetVariable(varName, value);
-			break;
-		}
-
-		case RValue::Type::Variable: {
-			const std::string &searchedName = value->value<std::string>();
-			auto [scope, var] = __findScope(&searchedName);
-
-			if (!scope) {
-				std::cerr << "Variable " << searchedName << " not in scope\n";
-				abort();
-			}
-
-			__doSetVariable(varName, var);
-			break;
-		}
-
-		default:
-			std::cerr << "setVariable(varName = " << *varName << "), unknown RValue type = " << toUnderlying(value->type()) << '\n';
-			abort();
-	}
-}
+*/
 
 } //namespace
 
@@ -257,32 +201,30 @@ void initRuntime(Program &program)
 
 void runcall(RuncallNum call, void *arg)
 {
-	std::cout << "==== Runcall " << call << " with arg = " << arg << '\n';
 	switch (call) {
 		case RUNCALL_SCOPE_PUSH:
-			std::cout << "Scope push\n";
 			scopeStack.push_back(Scope{});
 			break;
 		case RUNCALL_SCOPE_POP:
-			std::cout << "Scope pop\n";
 			scopeStack.pop_back();
 			break;
 		case RUNCALL_PUSH:
 			dataStack.push_back(arg);
 			break;
-		case RUNCALL_VARIABLE_UNSET:
-			std::cout << "Unset variable\n";
-			unsetVariable();
+		case RUNCALL_INIT_VARIABLE:
+			initVariable();
 			break;
-		case RUNCALL_VARIABLE_SET:
-			std::cout << "Set variable\n";
-			setVariable();
+		case RUNCALL_RESOLVE_NAME:
+			resolveName();
 			break;
-		case RUNCALL_BINOP:
-			executeBinOp(fromVoidPtr<Lua::BinOp::Type>(arg));
+		case RUNCALL_ASSIGN:
+			executeAssign();
 			break;
 		case RUNCALL_UNOP:
 			executeUnOp(fromVoidPtr<Lua::UnOp::Type>(arg));
+			break;
+		case RUNCALL_BINOP:
+			executeBinOp(fromVoidPtr<Lua::BinOp::Type>(arg));
 			break;
 		case RUNCALL_FUNCTION_CALL:
 			executeFunctionCall();
@@ -290,8 +232,9 @@ void runcall(RuncallNum call, void *arg)
 		case RUNCALL_TABLE_CTOR:
 			constructTable();
 			break;
+
 		case RUNCALL_TABLE_ACCESS:
-			accessTable();
+// 			accessTable();
 			break;
 		default:
 			std::cout << "Runcall " << call << " not supported\n";

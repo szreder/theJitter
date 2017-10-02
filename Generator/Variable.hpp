@@ -1,11 +1,6 @@
 #pragma once
 
-#include <cstring>
 #include <iostream>
-#include <memory>
-#include <string_view>
-#include <unordered_set>
-#include <variant>
 
 #include "Generator/Value.hpp"
 
@@ -17,8 +12,8 @@ public:
 	ValueType & type() { return m_value.first; }
 	const ValueType & type() const { return m_value.first; }
 
-	ValueVariant & value() { return m_value.second; }
-	const ValueVariant & value() const { return m_value.second; }
+	Value & value() { return m_value; }
+	const Value & value() const { return m_value; }
 
 	Value * asLValue() { return &m_value; }
 
@@ -28,17 +23,3 @@ private:
 };
 
 std::ostream & operator << (std::ostream &os, const Variable &v);
-
-struct VariableHasher {
-	size_t operator()(const Variable &v) const
-	{
-		return std::hash<std::string_view>{}(v.name());
-	}
-};
-
-struct VariableComparer {
-	bool operator()(const Variable &a, const Variable &b) const
-	{
-		return strcmp(a.name(), b.name()) == 0;
-	}
-};

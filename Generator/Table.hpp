@@ -8,15 +8,13 @@
 #include "Generator/Value.hpp"
 
 class Table {
+	friend std::ostream & operator << (std::ostream &os, const Table &t);
 public:
 	Value value(const RValue &key) const;
 	void setValue(const RValue &key, const RValue &value);
 
 private:
 	void checkKey(const RValue &key) const;
-	void checkValue(const RValue &value) const;
 
 	std::map <ValueVariant, Value> m_data;
 };
-
-std::ostream & operator << (std::ostream &os, const Table &t);
