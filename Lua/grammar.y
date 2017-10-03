@@ -129,8 +129,7 @@ var {
 
 func_call :
 prefix_expr args {
-	$$ = new Lua::FunctionCall{$1};
-	$$->setArgs($2);
+	$$ = new Lua::FunctionCall{$1, $2};
 }
 
 args :

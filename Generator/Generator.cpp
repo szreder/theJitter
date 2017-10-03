@@ -48,8 +48,8 @@ std::vector <RValue *> generateExprList(Program &program, gcc_jit_function *func
 	std::vector <RValue *> exprResults(exprList->exprs().size());
 	size_t i = 0;
 
-	for (const Node *expr : exprList->exprs()) {
-		exprResults[i] = dispatch(program, func, block, expr);
+	for (const auto &expr : exprList->exprs()) {
+		exprResults[i] = dispatch(program, func, block, expr.get());
 		if (exprResults[i] == nullptr)
 			exprResults[i] = program.allocRValue(RValue::Nil());
 		++i;
@@ -91,7 +91,7 @@ RValue * generate<Node::Type::TableCtor>(Program &program, gcc_jit_function *fun
 	RValue *result = program.allocRValue();
 	RUNCALL(RUNCALL_PUSH, result);
 
-	auto fields = tv->fields();
+	const auto &fields = tv->fields();
 	int fieldCounter = 0;
 	for (const auto &field : fields) {
 		if (field->fieldType() == Field::Type::NoIndex) {
@@ -131,8 +131,8 @@ RValue * generate<Node::Type::Chunk>(Program &program, gcc_jit_function *func, g
 	gcc_jit_block *block = gcc_jit_function_new_block(func, nullptr);
 	RUNCALL(RUNCALL_SCOPE_PUSH, nullptr);
 
-	for (const Node *n : c->children())
-		dispatch(program, func, block, n);
+	for (const auto &n : c->children())
+		dispatch(program, func, block, n.get());
 
 	gcc_jit_block_end_with_void_return(block, nullptr);
 	return nullptr;
@@ -202,8 +202,8 @@ RValue * generate<Node::Type::Assignment>(Program &program, gcc_jit_function *fu
 
 	size_t i = 0;
 	const VarList *varList = c->varList();
-	for (const LValue *lval : varList->vars()) {
-		RValue *dst = dispatch(program, func, block, lval);
+	for (const auto &lval : varList->vars()) {
+		RValue *dst = dispatch(program, func, block, lval.get());
 		if (i < exprResults.size())
 			RUNCALL(RUNCALL_PUSH, exprResults[i]);
 		else
