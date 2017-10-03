@@ -135,10 +135,8 @@ void resolveName()
 	RValue *dst = popData<RValue *>();
 
 	Variable *var = __findScope(varName).second;
-	if (var == nullptr) {
-		std::cerr << "Unable to resolve variable: " << *varName << '\n';
-		abort();
-	}
+	if (var == nullptr)
+		var = scopeStack.back().setVariable(varName, &RValue::Nil());
 
 	dst->setLValue(var->asLValue());
 }
@@ -172,7 +170,7 @@ void accessTable()
 	}
 
 	RValue *result = popData<RValue *>();
-	result->setValue(tableValue->value<std::shared_ptr <Table> >()->value(*keyValue));
+	result->setLValue(tableValue->value<std::shared_ptr <Table> >()->value(*keyValue));
 }
 
 } //namespace

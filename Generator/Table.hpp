@@ -10,8 +10,8 @@
 class Table {
 	friend std::ostream & operator << (std::ostream &os, const Table &t);
 public:
-	Value value(const RValue &key) const;
-	void setValue(const RValue &key, const RValue &value);
+	Value * value(const RValue &key);
+	Value * setValue(const RValue &key, const RValue &value);
 
 private:
 	void checkKey(const RValue &key) const;

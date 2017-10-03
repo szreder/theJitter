@@ -13,24 +13,24 @@ Variable * Scope::getVariable(const std::string *varName)
 	return nullptr;
 }
 
-void Scope::setVariable(const std::string *varName, const RValue *value)
+Variable * Scope::setVariable(const std::string *varName, const RValue *value)
 {
 	Variable tmp;
 	tmp.name() = varName->data();
 	tmp.type() = value->valueType();
 	tmp.value() = value->value();
 
-	m_vars.insert_or_assign(*varName, tmp);
+	return &m_vars.insert_or_assign(*varName, tmp).first->second;
 }
 
-void Scope::setVariable(const std::string *varName, const Variable *value)
+Variable * Scope::setVariable(const std::string *varName, const Variable *value)
 {
 	Variable tmp;
 	tmp.name() = varName->data();
 	tmp.type() = value->type();
 	tmp.value() = value->value();
 
-	m_vars.insert_or_assign(*varName, tmp);
+	return &m_vars.insert_or_assign(*varName, tmp).first->second;
 }
 
 bool Scope::removeVariable(const std::string *varName)

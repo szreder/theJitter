@@ -1,24 +1,21 @@
 #include "Generator/Table.hpp"
 #include "Util/Fold.hpp"
 
-Value Table::value(const RValue &key) const
+Value * Table::value(const RValue &key)
 {
 	checkKey(key);
 
 	auto iter = m_data.find(key.value().second);
 	if (iter == m_data.end())
-		return {};
-	return iter->second;
+		return setValue(key, RValue::Nil());
+	return &iter->second;
 }
 
-void Table::setValue(const RValue &key, const RValue &value)
+Value * Table::setValue(const RValue &key, const RValue &value)
 {
 	checkKey(key);
 
-	if (value.isNil())
-		m_data.erase(key.value().second);
-	else
-		m_data.insert_or_assign(key.value().second, value.value());
+	return &m_data.insert_or_assign(key.value().second, value.value()).first->second;
 }
 
 void Table::checkKey(const RValue &key) const

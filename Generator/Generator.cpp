@@ -203,10 +203,6 @@ RValue * generate<Node::Type::Assignment>(Program &program, gcc_jit_function *fu
 	size_t i = 0;
 	const VarList *varList = c->varList();
 	for (const LValue *lval : varList->vars()) {
-		assert(lval->lvalueType() == LValue::Type::Name);
-		RUNCALL(RUNCALL_PUSH, program.duplicateString(lval->name()));
-		RUNCALL(RUNCALL_INIT_VARIABLE, nullptr);
-
 		RValue *dst = dispatch(program, func, block, lval);
 		if (i < exprResults.size())
 			RUNCALL(RUNCALL_PUSH, exprResults[i]);
@@ -214,6 +210,7 @@ RValue * generate<Node::Type::Assignment>(Program &program, gcc_jit_function *fu
 			RUNCALL(RUNCALL_PUSH, program.allocRValue(RValue::Nil()));
 		RUNCALL(RUNCALL_PUSH, dst);
 		RUNCALL(RUNCALL_ASSIGN, nullptr);
+
 		++i;
 	}
 

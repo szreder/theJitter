@@ -9,8 +9,8 @@
 class Scope {
 public:
 	Variable * getVariable(const std::string *varName);
-	void setVariable(const std::string *varName, const RValue *value);
-	void setVariable(const std::string *varName, const Variable *value);
+	Variable * setVariable(const std::string *varName, const RValue *value);
+	Variable * setVariable(const std::string *varName, const Variable *value);
 	bool removeVariable(const std::string *varName);
 	bool removeVariable(const Variable *var);
 
